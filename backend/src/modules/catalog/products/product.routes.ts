@@ -1,16 +1,15 @@
-import { createProductAdminController } from './product.controller.js'
 import { Router } from 'express'
-import type { BrowserSecurity } from '../../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../../auth/sessions/session.service.js'
-import { createSessionHttp } from '../../auth/sessions/session.http.js'
+import type { BrowserSecurity, SessionHttp } from '../../auth/auth.public.js'
+import { createProductAdminController } from './product.controller.js'
+
 import type { createProductAdminService } from './product.service.js'
 
 function createProductAdminRoutes(
   service: ReturnType<typeof createProductAdminService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createProductAdminController(service)
+  const controller = createProductAdminController(service, sessionHttp)
 
   const router = Router()
   for (const path of [
@@ -27,7 +26,7 @@ function createProductAdminRoutes(
       path,
       security.cors('admin'),
       security.require('admin', 'admin'),
-      createSessionHttp(sessions).require('admin'),
+      sessionHttp.require('admin'),
       (_req, res, next) => {
         res.set('Access-Control-Expose-Headers', 'X-Request-Id, ETag, Location')
         next()

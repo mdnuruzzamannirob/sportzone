@@ -1,4 +1,11 @@
 import type { ClientSession, Types } from 'mongoose'
+import type {
+  MediaFormat,
+  MediaLookup,
+  MediaProvider,
+  MediaScanner,
+  ProviderAsset,
+} from './media.public.js'
 
 type MediaOwner = {
   kind: 'admin' | 'customer' | 'guest_order'
@@ -23,44 +30,6 @@ type MediaFile = {
   bytes: Uint8Array
 }
 
-type MediaFormat = 'png' | 'jpg' | 'webp'
-
-type ProviderAsset = {
-  publicId: string
-  delivery: 'upload' | 'authenticated'
-  format: MediaFormat
-  size: number
-  width: number
-  height: number
-  digest: string
-}
-
-type MediaLookup =
-  | {
-      kind: 'found'
-      asset: ProviderAsset
-    }
-  | {
-      kind: 'missing'
-    }
-  | {
-      kind: 'uncertain'
-    }
-
-interface MediaProvider {
-  upload(input: {
-    publicId: string
-    delivery: 'upload' | 'authenticated'
-    file: Uint8Array
-    format: MediaFormat
-    digest: string
-  }): Promise<MediaLookup>
-  lookup(publicId: string, delivery: 'upload' | 'authenticated'): Promise<MediaLookup>
-  remove(publicId: string, delivery: 'upload' | 'authenticated'): Promise<'deleted' | 'uncertain'>
-  publicUrl(publicId: string, format: MediaFormat): string
-  privateUrl(publicId: string, format: MediaFormat, expiresAt: Date): string
-}
-
 interface MediaAccess {
   admin(credential: string | undefined, transaction: ClientSession): Promise<MediaOwner>
   evidence(
@@ -70,17 +39,15 @@ interface MediaAccess {
   ): Promise<MediaOwner>
 }
 
-type MediaScanner = (bytes: Uint8Array) => Promise<'clean' | 'rejected' | 'uncertain'>
-
 export type {
-  MediaOwner,
   EvidenceScope,
-  MediaReference,
+  MediaAccess,
   MediaFile,
   MediaFormat,
-  ProviderAsset,
   MediaLookup,
+  MediaOwner,
   MediaProvider,
-  MediaAccess,
+  MediaReference,
   MediaScanner,
+  ProviderAsset,
 }

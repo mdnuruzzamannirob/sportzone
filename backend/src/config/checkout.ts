@@ -2,7 +2,8 @@ import { z } from 'zod'
 import { policyType } from '../modules/settings/setting.schema.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { loadDeliveryDeadlinePolicy } from './delivery.js'
-export const checkoutOptions = z.strictObject({
+
+const checkoutOptions = z.strictObject({
   quoteTtlSeconds: z.int().min(1).max(86400),
   requiredPolicyTypes: z
     .array(policyType)
@@ -10,13 +11,11 @@ export const checkoutOptions = z.strictObject({
     .max(7)
     .refine((v) => new Set(v).size === v.length && v.includes('terms')),
 })
-export type CheckoutOptions = z.infer<typeof checkoutOptions> & {
+type CheckoutOptions = z.infer<typeof checkoutOptions> & {
   codEnabled?: boolean
   deadline?: Awaited<ReturnType<typeof loadDeliveryDeadlinePolicy>>
 }
-export async function loadCheckoutOptions(
-  env: NodeJS.ProcessEnv,
-): Promise<CheckoutOptions | undefined> {
+async function loadCheckoutOptions(env: NodeJS.ProcessEnv): Promise<CheckoutOptions | undefined> {
   if (env.CHECKOUT_QUOTES_ENABLED === undefined || env.CHECKOUT_QUOTES_ENABLED === 'false') {
     if (env.CHECKOUT_COD_ENABLED && env.CHECKOUT_COD_ENABLED !== 'false')
       throw new ConfigurationError(['checkout_submission_configuration'])
@@ -47,3 +46,6 @@ export async function loadCheckoutOptions(
     throw new ConfigurationError(['checkout_quote_configuration'])
   }
 }
+
+export type { CheckoutOptions }
+export { checkoutOptions, loadCheckoutOptions }

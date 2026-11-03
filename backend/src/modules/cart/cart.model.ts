@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
 const line = new Schema(
@@ -41,5 +41,5 @@ function cartModel(connection: Connection) {
     : connection.model<CartRecord>('Cart', schema, 'carts')
 }
 
-export { cartModel }
 export type { CartRecord }
+export { cartModel }

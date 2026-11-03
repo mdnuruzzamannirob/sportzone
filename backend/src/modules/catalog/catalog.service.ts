@@ -1,23 +1,23 @@
-import { publicHomeSettings } from '../settings/setting.schema.js'
-import { Types, type ClientSession, type Connection, type PipelineStage } from 'mongoose'
+import { type ClientSession, type Connection, type PipelineStage, Types } from 'mongoose'
+import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
-import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
-import { description as descriptionInput } from './products/product.schema.js'
-import { productModels } from './products/product.model.js'
-import { categoryModel } from './categories/category.model.js'
+import type { PublicImageCandidate, PublicMediaReader } from '../media/media.public.js'
+import { publicHomeSettings } from '../settings/setting.schema.js'
 import {
   categoryCard,
   categoryQuery,
   categorySlug,
   productCard,
-  productQuery,
   productDetail,
+  productQuery,
   storefrontHome,
 } from './catalog.schema.js'
-import { attributes, attributeSignature } from './products/variant.schema.js'
-import type { createPublicMediaService, PublicImageCandidate } from '../media/access.service.js'
+import { categoryModel } from './categories/category.model.js'
+import { productModels } from './products/product.model.js'
+import { description as descriptionInput } from './products/product.schema.js'
+import { attributeSignature, attributes } from './products/variant.schema.js'
 
 // A parent is singular. Reaching an active root proves the chain terminated; cycles/orphans
 // and ancestry beyond the bounded traversal cannot become public through a partial chain.
@@ -224,7 +224,7 @@ type Result = {
 
 function createCatalogService(
   connection: Connection,
-  images: ReturnType<typeof createPublicMediaService>,
+  images: PublicMediaReader,
   homeContent?: {
     settings: () => Promise<unknown>
     policies: () => Promise<unknown>
@@ -248,7 +248,7 @@ function createCatalogService(
       row._image
         ? [
             {
-              targetId: new Types.ObjectId(row.id),
+              targetId: row.id,
               targetType: kind,
               publicId: row._image.publicId,
               alt: row._image.alt,
@@ -596,7 +596,7 @@ function createCatalogService(
       })
       const approved = await images(
         row._images.map((image) => ({
-          targetId: new Types.ObjectId(row.id),
+          targetId: row.id,
           targetType: 'product',
           publicId: image.publicId,
           alt: image.alt,
@@ -731,4 +731,4 @@ function catalogCheckoutAccess(connection: Connection) {
   }
 }
 
-export { createCatalogService, catalogReviewVisibility, catalogCheckoutAccess }
+export { catalogCheckoutAccess, catalogReviewVisibility, createCatalogService }

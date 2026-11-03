@@ -1,9 +1,9 @@
-import { createAuthQuotaStore } from './sessions/auth-throttle.persistence.js'
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { z } from 'zod'
 import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import type { IdentityModels } from './auth.model.js'
+import { createAuthQuotaStore } from './sessions/auth-throttle.persistence.js'
 
 type Shape = Record<string, unknown>
 
@@ -361,6 +361,6 @@ async function migrateIdentityPostalCode(connection: Connection) {
 export {
   identityCollectionValidators,
   initializeIdentityPersistence,
-  verifyIdentityPersistence,
   migrateIdentityPostalCode,
+  verifyIdentityPersistence,
 }

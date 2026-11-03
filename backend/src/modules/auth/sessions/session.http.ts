@@ -50,4 +50,4 @@ function createSessionHttp(service: SessionService, clock: () => Date = () => ne
   }
 }
 
-export { readSessionCookie, createSessionHttp }
+export { createSessionHttp, readSessionCookie }

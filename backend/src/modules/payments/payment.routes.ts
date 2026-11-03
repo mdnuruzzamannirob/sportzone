@@ -1,3 +1,17 @@
+import express, { type RequestHandler, Router } from 'express'
+import { ApiError } from '../../shared/errors/app-error.js'
+import type {
+  BrowserSecurity,
+  PaymentInitiationCredentials,
+  SessionCookies,
+  SessionHttp,
+} from '../auth/auth.public.js'
+import type { createPaymentInitiationService } from './attempts/payment-initiation.service.js'
+import { paymentReturnForm, paymentReturnParams } from './collections/payment-callback.schema.js'
+import type { createPaymentCallbackService } from './collections/payment-callback.service.js'
+import type { createPaymentMatchingService } from './collections/payment-matching.service.js'
+import type { createPaymentMonitorService } from './collections/payment-monitor.service.js'
+import type { createPaymentRiskService } from './collections/payment-risk.service.js'
 import {
   createPaymentCallbackController,
   createPaymentInitiationController,
@@ -6,20 +20,7 @@ import {
   createPaymentMonitorController,
   createPaymentRiskController,
 } from './payment.controller.js'
-import { Router, type RequestHandler } from 'express'
-import express from 'express'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { paymentReturnParams, paymentReturnForm } from './collections/payment-callback.schema.js'
-import type { createPaymentCallbackService } from './collections/payment-callback.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { PaymentInitiationCredentials } from '../auth/checkout-access.service.js'
-import type { createPaymentInitiationService } from './attempts/payment-initiation.service.js'
-import type { createPaymentMatchingService } from './collections/payment-matching.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
 import type { createPaymentMethodsService } from './payment-methods.service.js'
-import type { createPaymentMonitorService } from './collections/payment-monitor.service.js'
-import type { createPaymentRiskService } from './collections/payment-risk.service.js'
 
 function createPaymentCallbackRoutes(
   service: ReturnType<typeof createPaymentCallbackService>,
@@ -85,8 +86,9 @@ function createPaymentInitiationRoutes(
   security: BrowserSecurity,
   throttle: RequestHandler,
   storefrontOrigin: string,
+  cookies: SessionCookies,
 ) {
-  const controller = createPaymentInitiationController(service, storefrontOrigin)
+  const controller = createPaymentInitiationController(service, storefrontOrigin, cookies)
 
   const router = Router(),
     cors = security.cors('storefront')
@@ -111,13 +113,13 @@ function createPaymentInitiationRoutes(
 function createPaymentMatchingRoutes(
   service: ReturnType<typeof createPaymentMatchingService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createPaymentMatchingController(service)
+  const controller = createPaymentMatchingController(service, sessionHttp)
 
   const router = Router(),
     cors = security.cors('admin'),
-    current = createSessionHttp(sessions).require('admin')
+    current = sessionHttp.require('admin')
   const link = '/admin/provider-receipts/:intakeId/link',
     allocate = '/admin/payment-collections/:collectionId/allocate'
   for (const path of [link, allocate]) router.options(path, cors)
@@ -141,8 +143,9 @@ function createPaymentMatchingRoutes(
 function createPaymentMethodsRoutes(
   service: ReturnType<typeof createPaymentMethodsService>,
   origins: readonly string[],
+  cookies: SessionCookies,
 ) {
-  const controller = createPaymentMethodsController(service)
+  const controller = createPaymentMethodsController(service, cookies)
 
   const router = Router()
   const cors: RequestHandler = (req, res, next) => {
@@ -181,12 +184,12 @@ function createPaymentMethodsRoutes(
 function createPaymentMonitorRoutes(
   service: ReturnType<typeof createPaymentMonitorService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createPaymentMonitorController(service)
+  const controller = createPaymentMonitorController(service, sessionHttp)
 
   const router = Router(),
-    http = createSessionHttp(sessions),
+    http = sessionHttp,
     root = '/admin/payments',
     detail = `${root}/:paymentId`,
     reconcile = `${detail}/reconcile`
@@ -213,9 +216,9 @@ function createPaymentMonitorRoutes(
 function createPaymentRiskRoutes(
   service: ReturnType<typeof createPaymentRiskService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createPaymentRiskController(service)
+  const controller = createPaymentRiskController(service, sessionHttp)
 
   const router = Router(),
     path = '/admin/payments/:paymentId/risk-decisions'
@@ -224,7 +227,7 @@ function createPaymentRiskRoutes(
     path,
     security.cors('admin'),
     security.require('admin', 'admin'),
-    createSessionHttp(sessions).require('admin'),
+    sessionHttp.require('admin'),
     controller.postPaymentsRiskDecisions,
   )
   return router

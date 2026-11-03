@@ -1,19 +1,20 @@
-import type { GuestOrderAccess } from './order.public.js'
-import type { customerPaymentSummaryAccess } from '../payments/payment.service.js'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
-import { deliveryExceptionModel } from './delivery-exception.model.js'
-import { verifyDeliveryExceptionPersistence } from './delivery-exception.persistence.js'
-import { Types, type ClientSession, type Connection } from 'mongoose'
 import { createHash, randomBytes } from 'node:crypto'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { buildOrderSnapshot } from './order-snapshot.service.js'
-import { orderModels } from './order.model.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { initialOrderResult, orderCreateCommand } from './order.schema.js'
+import { pageMeta, paginationSchema } from '../../shared/pagination.js'
+import type { CustomerPaymentSummaryAccess } from '../payments/payment.public.js'
+
 import { cancellationModel } from './cancellation.model.js'
 import { verifyCancellationPersistence } from './cancellation.persistence.js'
+import { deliveryExceptionModel } from './delivery-exception.model.js'
+import { verifyDeliveryExceptionPersistence } from './delivery-exception.persistence.js'
+import { orderModels } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+import type { GuestOrderAccess } from './order.public.js'
+import { initialOrderResult, orderCreateCommand } from './order.schema.js'
+import { buildOrderSnapshot } from './order-snapshot.service.js'
 
 // REQUIRED checkout coordinator capability. In THIS transaction it must authorize current
 // principal/consent, bind the intended order/intent, consume its valid quote and coordinate
@@ -125,7 +126,7 @@ function checkoutOrderReadAccess(connection: Connection) {
   const { orders } = orderModels(connection)
   return async (
     session: ClientSession,
-    principal: import('../auth/checkout-access.service.js').CheckoutPrincipal,
+    principal: import('../auth/auth.public.js').CheckoutPrincipal,
     orderId: string,
     intentId: string,
   ) => {
@@ -621,7 +622,7 @@ function claimEligibilityOrderAccess(connection: Connection) {
   return async (
     session: ClientSession,
     orderId: string,
-    principal: import('../auth/checkout-access.service.js').OrderPrincipal,
+    principal: import('../auth/auth.public.js').OrderPrincipal,
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyOrderPersistence(connection)
@@ -1068,7 +1069,7 @@ function complaintOrderAccess(connection: Connection) {
   return async (
     session: ClientSession,
     id: string,
-    principal: import('../auth/checkout-access.service.js').OrderPrincipal,
+    principal: import('../auth/auth.public.js').OrderPrincipal,
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyOrderPersistence(connection)
@@ -1099,7 +1100,7 @@ function claimEligibilitySnapshotAccess(connection: Connection) {
   return async (
     session: ClientSession,
     orderId: string,
-    principal: import('../auth/checkout-access.service.js').OrderPrincipal,
+    principal: import('../auth/auth.public.js').OrderPrincipal,
   ) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     await verifyOrderPersistence(connection)
@@ -1301,7 +1302,7 @@ function orderReportAccess(connection: Connection) {
 
 function customerAdminOrderHistoryAccess(
   connection: Connection,
-  payments: ReturnType<typeof customerPaymentSummaryAccess>,
+  payments: CustomerPaymentSummaryAccess,
 ) {
   const { orders } = orderModels(connection)
   const query = paginationSchema.safeExtend({
@@ -1474,36 +1475,36 @@ function refundRequestOrderAccess(connection: Connection) {
   }
 }
 
+export type { OrderCreationAccess }
 export {
-  createOrderService,
+  cancellationRefundSnapshotAccess,
   checkoutOrderReadAccess,
-  initialOrderAllocationAccess,
-  orderAllocationBinding,
+  claimEligibilityOrderAccess,
+  claimEligibilitySnapshotAccess,
+  claimQuantityAccess,
+  claimRestockAccess,
+  claimReviewQuantityAccess,
+  closedRefundRequestAccess,
+  codCollectionOrderAccess,
+  complaintOrderAccess,
+  createOrderService,
+  customerAdminOrderHistoryAccess,
+  customerOrderHistoryAccess,
+  deliveryExceptionRefundSnapshotAccess,
   expiredOrderAllocationAccess,
   guestOrderAccess,
-  paymentMethodOrderAccess,
+  initialOrderAllocationAccess,
+  orderAllocationBinding,
+  orderReportAccess,
   paymentAllocationOrderAccess,
   paymentInitiationOrderData,
-  verifiedFundingOrderAccess,
-  claimQuantityAccess,
-  claimEligibilityOrderAccess,
-  claimReviewQuantityAccess,
-  claimRestockAccess,
+  paymentMethodOrderAccess,
   refundOrderSnapshotAccess,
-  cancellationRefundSnapshotAccess,
-  refundUnitReservationAccess,
-  reviewPurchaseEligibilityAccess,
-  returnNotificationOrderAccess,
-  codCollectionOrderAccess,
-  customerOrderHistoryAccess,
-  complaintOrderAccess,
-  claimEligibilitySnapshotAccess,
-  refundUnitOutcomeAccess,
-  orderReportAccess,
-  customerAdminOrderHistoryAccess,
-  deliveryExceptionRefundSnapshotAccess,
-  stockExceptionQueueAccess,
-  closedRefundRequestAccess,
   refundRequestOrderAccess,
+  refundUnitOutcomeAccess,
+  refundUnitReservationAccess,
+  returnNotificationOrderAccess,
+  reviewPurchaseEligibilityAccess,
+  stockExceptionQueueAccess,
+  verifiedFundingOrderAccess,
 }
-export type { OrderCreationAccess }

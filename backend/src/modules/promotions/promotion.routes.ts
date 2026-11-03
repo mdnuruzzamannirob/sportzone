@@ -1,19 +1,18 @@
+import { Router } from 'express'
+import type { BrowserSecurity, SessionCookies, SessionHttp } from '../auth/auth.public.js'
 import {
   createCouponAdminController,
   createCouponPreviewController,
 } from './promotion.controller.js'
-import { Router } from 'express'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
+
 import type { createCouponAdminService, createCouponPreviewService } from './promotion.service.js'
 
 function createCouponAdminRoutes(
   service: ReturnType<typeof createCouponAdminService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createCouponAdminController(service)
+  const controller = createCouponAdminController(service, sessionHttp)
 
   const router = Router()
   for (const path of [
@@ -27,7 +26,7 @@ function createCouponAdminRoutes(
     '/admin/coupons',
     security.cors('admin'),
     security.require('admin', 'admin'),
-    createSessionHttp(sessions).require('admin'),
+    sessionHttp.require('admin'),
   )
   router.use('/admin/coupons', (_req, res, next) => {
     res.set('Access-Control-Expose-Headers', 'X-Request-Id, ETag')
@@ -45,8 +44,9 @@ function createCouponAdminRoutes(
 function createCouponPreviewRoutes(
   service: ReturnType<typeof createCouponPreviewService>,
   security: BrowserSecurity,
+  cookies: SessionCookies,
 ) {
-  const controller = createCouponPreviewController(service)
+  const controller = createCouponPreviewController(service, cookies)
 
   const router = Router(),
     cors = security.cors('storefront')

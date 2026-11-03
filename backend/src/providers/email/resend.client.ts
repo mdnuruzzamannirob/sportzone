@@ -1,15 +1,14 @@
+import type { EmailAdapter } from '../../modules/notifications/notification.public.js'
+import { assertOutsideTransaction } from '../../shared/database/transaction.js'
 import {
+  type EmailOptions,
   emailAcceptanceSchema,
   emailMessageSchema,
   validateEmailOptions,
-  type EmailOptions,
 } from './resend.schema.js'
-export { validateEmailOptions, type EmailOptions } from './resend.schema.js'
-import type { EmailAdapter } from '../../modules/notifications/notification.types.js'
-import { assertOutsideTransaction } from '../../shared/database/transaction.js'
 
 // Fixed origin, no caller-controlled URL or redirect. Tests inject a local fetch transport.
-export function createResendAdapter(
+function createResendAdapter(
   settings: EmailOptions,
   transport: typeof fetch = fetch,
 ): EmailAdapter {
@@ -81,3 +80,6 @@ export function createResendAdapter(
     },
   }
 }
+
+export { type EmailOptions, validateEmailOptions } from './resend.schema.js'
+export { createResendAdapter }

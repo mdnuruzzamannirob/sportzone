@@ -1,4 +1,3 @@
-import { loginInput, registrationInput } from './credential.schema.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import type { IdentityNotifications } from '../../notifications/notification.public.js'
@@ -6,6 +5,7 @@ import type { IdentityModels } from '../auth.model.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import type { SessionKind, SessionService } from '../sessions/session.service.js'
 import { accountDto } from './account.dto.js'
+import { loginInput, registrationInput } from './credential.schema.js'
 import { hashPassword, verifyPassword } from './password.service.js'
 
 function createCredentialService(
@@ -92,5 +92,5 @@ function createCredentialService(
 type CredentialService = ReturnType<typeof createCredentialService>
 
 export { loginInput, registrationInput } from './credential.schema.js'
-export { createCredentialService }
 export type { CredentialService }
+export { createCredentialService }

@@ -1,5 +1,5 @@
-import { parsePhoneNumberWithError } from 'libphonenumber-js/max'
 import { z } from 'zod'
+import { bangladeshPhone } from '../../shared/validation.js'
 
 const text = (max: number) =>
   z
@@ -8,24 +8,6 @@ const text = (max: number) =>
     .min(1)
     .refine((value) => [...value].length <= max)
     .meta({ maxLength: max })
-
-const bangladeshPhone = z
-  .string()
-  .max(64)
-  .transform((value, ctx) => {
-    try {
-      const number = parsePhoneNumberWithError(value, {
-        defaultCountry: 'BD',
-        extract: false,
-      })
-      if (number.country !== 'BD' || !number.isValid() || number.ext)
-        throw new Error('Invalid phone')
-      return String(number.number)
-    } catch {
-      ctx.addIssue({ code: 'custom', message: 'Invalid Bangladesh phone' })
-      return z.NEVER
-    }
-  })
 
 const profilePatch = z
   .strictObject({
@@ -55,4 +37,4 @@ const addressId = z.string().regex(/^[a-f0-9]{24}$/)
 
 const deletionInput = z.strictObject({ reason: text(2000).optional() })
 
-export { bangladeshPhone, profilePatch, addressInput, addressPatch, addressId, deletionInput }
+export { addressId, addressInput, addressPatch, bangladeshPhone, deletionInput, profilePatch }

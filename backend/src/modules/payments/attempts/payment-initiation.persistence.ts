@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../../shared/database/indexes.js'
-import { paymentInitiationModel, initiationStatuses } from './payment-initiation.model.js'
+import { initiationStatuses, paymentInitiationModel } from './payment-initiation.model.js'
 
 const hash = { bsonType: 'string', pattern: '^[a-f0-9]{64}$' }
 
@@ -100,7 +100,7 @@ async function initializePaymentInitiationPersistence(connection: Connection) {
 }
 
 export {
-  verifyPaymentInitiationPersistence,
   initializePaymentInitiationPersistence,
   paymentInitiationValidator,
+  verifyPaymentInitiationPersistence,
 }

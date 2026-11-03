@@ -43,8 +43,11 @@ const actions = {
   'POST /admin/auth/password-resets': 'admin.recovery.request',
   'POST /admin/auth/password-resets/confirm': 'admin.recovery.confirm',
 } as const
-export type SecurityAction = (typeof actions)[keyof typeof actions]
-export function securityAction(method: string, route: string): SecurityAction | undefined {
+type SecurityAction = (typeof actions)[keyof typeof actions]
+function securityAction(method: string, route: string): SecurityAction | undefined {
   const key = `${method} ${route}`
   return Object.hasOwn(actions, key) ? actions[key as keyof typeof actions] : undefined
 }
+
+export type { SecurityAction }
+export { securityAction }

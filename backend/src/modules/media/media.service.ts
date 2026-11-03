@@ -1,10 +1,11 @@
 import type { Connection } from 'mongoose'
-import { createMediaContext, type MediaDependencies } from './media.context.js'
-import { createMediaUploads } from './upload.service.js'
 import { createMediaAccess } from './access.service.js'
 import { createMediaAttachments } from './attachment.service.js'
 import { createMediaCleanup } from './cleanup.service.js'
+import { createMediaContext, type MediaDependencies } from './media.context.js'
+import { verifyMediaPersistence } from './media.persistence.js'
 import type { MediaAccess } from './media.types.js'
+import { createMediaUploads } from './upload.service.js'
 
 function createMediaService(
   connection: Connection,
@@ -16,6 +17,7 @@ function createMediaService(
   const context = createMediaContext(connection, dependencies, clock)
   const uploads = createMediaUploads(context)
   return {
+    verifyPersistence: () => verifyMediaPersistence(connection),
     ...uploads,
     ...createMediaAccess(context),
     ...createMediaAttachments(context),
@@ -25,7 +27,7 @@ function createMediaService(
 
 type MediaService = ReturnType<typeof createMediaService>
 
-export { verifyMediaPersistence } from './media.persistence.js'
 export type { MediaDependencies } from './media.context.js'
-export { createMediaService }
+export { verifyMediaPersistence } from './media.persistence.js'
 export type { MediaService }
+export { createMediaService }

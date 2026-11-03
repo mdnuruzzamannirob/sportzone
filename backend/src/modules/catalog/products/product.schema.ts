@@ -1,7 +1,8 @@
 import { Types } from 'mongoose'
 import { z } from 'zod'
-import { text, money } from '../catalog.schema.js'
 import { paginationSchema } from '../../../shared/pagination.js'
+import { boundedText as text } from '../../../shared/validation.js'
+import { money } from '../catalog.schema.js'
 import { adminVariant, variantBatch } from './variant.schema.js'
 
 const catalogId = z
@@ -128,19 +129,19 @@ export {
   attributeSignature,
   attributes,
   sku,
-  variantInput,
   variantBatch,
+  variantInput,
 } from './variant.schema.js'
 export {
-  productParams,
-  productCreate,
-  productPatch,
-  productDeactivate,
-  productListQuery,
   adminProduct,
   adminProductDetail,
   catalogId,
-  slug,
   description,
+  productCreate,
+  productDeactivate,
   productInput,
+  productListQuery,
+  productParams,
+  productPatch,
+  slug,
 }

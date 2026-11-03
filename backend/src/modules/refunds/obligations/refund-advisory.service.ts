@@ -2,15 +2,16 @@ import type { ClientSession } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { refundOrderSnapshotAccess } from '../../orders/order.service.js'
-import type { refundClaimSnapshotAccess } from '../../returns/return.service.js'
+import type { RefundOrderSnapshotAccess } from '../../orders/order.public.js'
 import type {
-  correctionPaymentSnapshotAccess,
-  refundPaymentSnapshotAccess,
-} from '../../payments/payment.service.js'
+  CorrectionPaymentSnapshotAccess,
+  RefundPaymentSnapshotAccess,
+} from '../../payments/payment.public.js'
+import type { RefundClaimSnapshotAccess } from '../../returns/return.public.js'
+
 import {
-  calculateMerchandiseRefund,
   calculateCorrectionRefund,
+  calculateMerchandiseRefund,
   planMultiSourceMerchandiseRefund,
 } from './refund-allocation.policy.js'
 
@@ -31,9 +32,9 @@ const command = z.strictObject({
 // Caller owns current admin/customer scope and transaction. No root/HTTP wiring is installed.
 // This snapshot is advisory: a future reservation writer must recheck everything using CAS.
 function createRefundAdvisoryService(
-  claim: ReturnType<typeof refundClaimSnapshotAccess>,
-  order: ReturnType<typeof refundOrderSnapshotAccess>,
-  payment: ReturnType<typeof refundPaymentSnapshotAccess>,
+  claim: RefundClaimSnapshotAccess,
+  order: RefundOrderSnapshotAccess,
+  payment: RefundPaymentSnapshotAccess,
   deliveryPolicy?: (
     session: ClientSession,
     input: {
@@ -84,9 +85,7 @@ const correctionCommand = z.strictObject({
 })
 
 // Read-only snapshot; caller must authorize and a future writer must fence every capacity.
-function createCorrectionRefundAdvisoryService(
-  payment: ReturnType<typeof correctionPaymentSnapshotAccess>,
-) {
+function createCorrectionRefundAdvisoryService(payment: CorrectionPaymentSnapshotAccess) {
   return async (session: ClientSession, raw: unknown) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     const input = parseInput(correctionCommand, raw)
@@ -144,9 +143,9 @@ const multiCommand = command.omit({ sourceCollectionId: true }).extend({
 // This snapshot planner is private and nonbinding; transaction-wide CAS reservations and durable
 // source-specific obligations must be performed separately before any financial effect.
 function createMultiSourceRefundAdvisoryService(
-  claim: ReturnType<typeof refundClaimSnapshotAccess>,
-  order: ReturnType<typeof refundOrderSnapshotAccess>,
-  payment: ReturnType<typeof refundPaymentSnapshotAccess>,
+  claim: RefundClaimSnapshotAccess,
+  order: RefundOrderSnapshotAccess,
+  payment: RefundPaymentSnapshotAccess,
   deliveryPolicy?: (
     session: ClientSession,
     input: {
@@ -167,7 +166,7 @@ function createMultiSourceRefundAdvisoryService(
       heldPoisha: number
       completedPoisha: number
     }[] = []
-    let aggregate: Awaited<ReturnType<ReturnType<typeof refundPaymentSnapshotAccess>>> | undefined
+    let aggregate: Awaited<ReturnType<RefundPaymentSnapshotAccess>> | undefined
     for (const sourceCollectionId of input.sourceCollectionIds) {
       const fact = await payment(session, input.orderId, sourceCollectionId)
       if (
@@ -205,7 +204,7 @@ function createMultiSourceRefundAdvisoryService(
 }
 
 export {
-  createRefundAdvisoryService,
   createCorrectionRefundAdvisoryService,
   createMultiSourceRefundAdvisoryService,
+  createRefundAdvisoryService,
 }

@@ -2,12 +2,16 @@ import type { RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
-import type { createCartService } from './cart.service.js'
+import type { SessionCookies } from '../auth/auth.public.js'
 import { variantParams } from './cart.schema.js'
+import type { createCartService } from './cart.service.js'
 
-function createCartController(service: ReturnType<typeof createCartService>) {
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'customer')
+function createCartController(
+  service: ReturnType<typeof createCartService>,
+  cookies: SessionCookies,
+) {
+  const token = (req: import('express').Request) =>
+    cookies.readSessionCookie(req.get('Cookie'), 'customer')
   const getCart: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
     respond(res, await service.read(token(req)))

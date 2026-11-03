@@ -1,10 +1,11 @@
-import type { ClientSession, Connection, Types } from 'mongoose'
-import { ApiError } from '../../shared/errors/app-error.js'
+import type { ClientSession, Connection } from 'mongoose'
+import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { assertOutsideTransaction, inTransaction } from '../../shared/database/transaction.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { key, type MediaContext } from './media.context.js'
 import { type MediaAsset, mediaModel } from './media.model.js'
+import type { PublicImageCandidate } from './media.public.js'
 import type { EvidenceScope, MediaOwner, MediaProvider } from './media.types.js'
-import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 
 function scopeOf(asset: MediaAsset): EvidenceScope {
   if (!asset.orderId || !asset.claimType || !asset.orderItemIds.length)
@@ -66,25 +67,6 @@ function createMediaAccess(context: MediaContext) {
   }
 }
 
-type PublicImageCandidate = {
-  targetId: Types.ObjectId
-  publicId: string
-  alt: string
-} & (
-  | {
-      targetType: 'product' | 'category'
-    }
-  | {
-      targetType: 'store_settings'
-      slot: 'branding'
-    }
-  | {
-      targetType: 'store_settings'
-      slot: 'homepageBanner'
-      assetId: Types.ObjectId
-    }
-)
-
 // Read-only publication boundary: never reuse a caller/stored URL or sign private delivery.
 function createPublicMediaService(
   connection: Connection,
@@ -141,7 +123,7 @@ function createPublicMediaService(
       const url = new URL(generated)
       if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash)
         continue
-      const target = candidate.targetId.toHexString()
+      const target = candidate.targetId
       const assets =
         images.get(target) ??
         new Map<
@@ -158,5 +140,5 @@ function createPublicMediaService(
   }
 }
 
-export { createMediaAuthorization, createMediaAccess, createPublicMediaService }
 export type { PublicImageCandidate }
+export { createMediaAccess, createMediaAuthorization, createPublicMediaService }

@@ -1,6 +1,6 @@
-import { createEmailVerificationController } from './email-verification.controller.js'
-import { Router, type RequestHandler } from 'express'
+import { type RequestHandler, Router } from 'express'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
+import { createEmailVerificationController } from './email-verification.controller.js'
 import type { createEmailVerificationService } from './email-verification.service.js'
 
 function createEmailVerificationRoutes(

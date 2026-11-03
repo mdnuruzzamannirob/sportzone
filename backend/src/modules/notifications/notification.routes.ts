@@ -1,19 +1,17 @@
 import { Router } from 'express'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
-import type { createNotificationAdminService } from './notification.service.js'
+import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
 import { createNotificationController } from './notification.controller.js'
+import type { createNotificationAdminService } from './notification.service.js'
 
 function createNotificationRoutes(
   service: ReturnType<typeof createNotificationAdminService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
   const router = Router(),
     cors = security.cors('admin'),
-    http = createSessionHttp(sessions),
-    controller = createNotificationController(service)
+    http = sessionHttp,
+    controller = createNotificationController(service, sessionHttp)
   for (const path of ['/admin/notifications', '/admin/notifications/:notificationId/retry'])
     router.options(path, cors)
   router.get('/admin/notifications', cors, http.require('admin'), controller.list)

@@ -1,8 +1,8 @@
+import { type RequestHandler, Router } from 'express'
 import { ApiError } from '../../shared/errors/app-error.js'
-import { Router, type RequestHandler } from 'express'
-import { createDeliveryController, createDeliveryAreasController } from './delivery.controller.js'
-import type { DeliveryService } from './delivery.service.js'
+import { createDeliveryAreasController, createDeliveryController } from './delivery.controller.js'
 import type { DeliveryAreasAccess } from './delivery.public.js'
+import type { DeliveryService } from './delivery.service.js'
 
 interface DeliveryRouteSecurity {
   cors: RequestHandler
@@ -78,5 +78,5 @@ function createDeliveryAreaRoutes(read: DeliveryAreasAccess, origins: readonly s
   return router
 }
 
-export { createDeliveryRoutes, createDeliveryAreaRoutes }
 export type { DeliveryRouteSecurity }
+export { createDeliveryAreaRoutes, createDeliveryRoutes }

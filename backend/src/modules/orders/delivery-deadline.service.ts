@@ -3,13 +3,13 @@ import { jsonDigest } from '../../shared/crypto.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import {
-  deliveryDeadlineRule,
-  deliveryDeadlineManifest,
+  type DeliveryDeadlineBasis,
+  type DeliveryDeadlineManifest,
+  deliveryDeadline,
   deliveryDeadlineBasis,
   deliveryDeadlineEvents,
-  deliveryDeadline,
-  type DeliveryDeadlineManifest,
-  type DeliveryDeadlineBasis,
+  deliveryDeadlineManifest,
+  deliveryDeadlineRule,
 } from './delivery-deadline.schema.js'
 
 // Fixed field order from the owning validator, including explicit legal-cap order.
@@ -252,8 +252,8 @@ function deliveryDeadlineApprovalAccess(
 }
 
 export {
-  deliveryDeadlineDigest,
   addDeliveryCalendarDays,
   createDeliveryDeadlineService,
   deliveryDeadlineApprovalAccess,
+  deliveryDeadlineDigest,
 }

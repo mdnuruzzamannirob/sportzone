@@ -1,9 +1,9 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
-import type { IdentityModels } from '../auth.model.js'
-import { type SessionOptions, validateSessionOptions } from '../sessions/session.service.js'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
+import type { IdentityModels } from '../auth.model.js'
+import { type SessionOptions, validateSessionOptions } from '../sessions/session.service.js'
 import { proofPattern } from '../verification/proof.crypto.js'
 
 function createGuestSessionService(
@@ -182,5 +182,5 @@ function readGuestCookie(header: string | undefined) {
   return token && proofPattern.test(token) ? token : undefined
 }
 
-export { createGuestSessionService, readGuestCookie }
 export type { GuestSessions }
+export { createGuestSessionService, readGuestCookie }

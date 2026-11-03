@@ -2,13 +2,17 @@ import type { RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import { readContextCookie } from '../auth/sessions/browser-security.service.js'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
+import type { SessionCookies } from '../auth/auth.public.js'
+
 import { couponParams } from './promotion.schema.js'
 import type { createCouponAdminService, createCouponPreviewService } from './promotion.service.js'
 
-function createCouponAdminController(service: ReturnType<typeof createCouponAdminService>) {
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'admin')
+function createCouponAdminController(
+  service: ReturnType<typeof createCouponAdminService>,
+  cookies: SessionCookies,
+) {
+  const token = (req: import('express').Request) =>
+    cookies.readSessionCookie(req.get('Cookie'), 'admin')
   const id = (req: import('express').Request) => parseInput(couponParams, req.params).couponId
   const getAdminCoupons: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
@@ -47,7 +51,10 @@ function createCouponAdminController(service: ReturnType<typeof createCouponAdmi
   }
 }
 
-function createCouponPreviewController(service: ReturnType<typeof createCouponPreviewService>) {
+function createCouponPreviewController(
+  service: ReturnType<typeof createCouponPreviewService>,
+  cookies: SessionCookies,
+) {
   const postCouponsPreview: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.query)
     const cookie = req.get('Cookie')
@@ -58,8 +65,8 @@ function createCouponPreviewController(service: ReturnType<typeof createCouponPr
           customerPresent: (cookie ?? '')
             .split(';')
             .some((value) => value.trim().startsWith('sz_customer_sid=')),
-          customerToken: readSessionCookie(cookie, 'customer'),
-          contextToken: readContextCookie(cookie, 'storefront'),
+          customerToken: cookies.readSessionCookie(cookie, 'customer'),
+          contextToken: cookies.readContextCookie(cookie, 'storefront'),
           csrfToken: req.get('X-CSRF-Token'),
         },
         req.body,

@@ -17,4 +17,4 @@ function checkoutCommercialDigest(raw: unknown) {
   return hash({ ...snapshot, deadlineBasis })
 }
 
-export { checkoutDraftFingerprint, checkoutCommercialDigest }
+export { checkoutCommercialDigest, checkoutDraftFingerprint }

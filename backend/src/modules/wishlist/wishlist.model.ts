@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { mutableSchemaOptions } from '../../shared/database/schema.js'
 
 const schema = new Schema(
@@ -27,5 +27,5 @@ function wishlistModel(connection: Connection) {
     : connection.model<WishlistRecord>('Wishlist', schema, 'wishlists')
 }
 
-export { wishlistModel }
 export type { WishlistRecord }
+export { wishlistModel }

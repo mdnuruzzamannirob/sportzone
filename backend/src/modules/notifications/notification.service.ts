@@ -1,28 +1,30 @@
-import {
-  notificationAdminView,
-  notificationAdminQuery,
-  notificationRetryInput,
-} from './notification.schema.js'
 import { createHash, randomUUID } from 'node:crypto'
-import { type Connection, Types, type ClientSession } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { pageMeta } from '../../shared/pagination.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+
 import type { AdminAccountAccess } from '../auth/auth.public.js'
 import { createNotificationModel } from './notification.model.js'
 import { createNotificationPersistence } from './notification.persistence.js'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { pageMeta } from '../../shared/pagination.js'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { ApiError } from '../../shared/errors/app-error.js'
+import {
+  notificationAdminQuery,
+  notificationAdminView,
+  notificationRetryInput,
+} from './notification.schema.js'
 import type { DeliveryOutcome } from './notification.types.js'
 
 function createNotificationAdminService(
   connection: Connection,
   admins: AdminAccountAccess,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   const model = createNotificationModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   return {
     async list(token: string | undefined, raw: unknown) {
       const input = parseInput(notificationAdminQuery, raw)
@@ -744,5 +746,5 @@ function createNotificationService(connection: Connection, clock: () => Date = (
 
 type NotificationService = ReturnType<typeof createNotificationService>
 
-export { createNotificationAdminService, createNotificationService }
 export type { NotificationService }
+export { createNotificationAdminService, createNotificationService }

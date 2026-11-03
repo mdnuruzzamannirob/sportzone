@@ -1,4 +1,4 @@
-import { Schema, Types, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema, Types } from 'mongoose'
 import { mutableSchemaOptions, optionalObjectIdField } from '../../../shared/database/schema.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 
@@ -95,4 +95,4 @@ function paymentInitiationModel(connection: Connection) {
     : connection.model<Initiation>('PaymentInitiation', schema, 'paymentInitiations')
 }
 
-export { paymentInitiationModel, initiationStatuses }
+export { initiationStatuses, paymentInitiationModel }

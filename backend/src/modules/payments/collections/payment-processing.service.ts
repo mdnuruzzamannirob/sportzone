@@ -1,20 +1,21 @@
-import { createNotificationService } from '../../notifications/notification.service.js'
 import { createHash } from 'node:crypto'
-import { createCorrectionObligationService } from '../../refunds/obligations/correction-obligation.service.js'
-import { createPaymentSettlementService } from './payment-settlement.service.js'
 import type { ClientSession, Connection } from 'mongoose'
 import { assertOutsideTransaction, inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import { createAuditWriter } from '../../audit/audit.service.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import { createNotificationService } from '../../notifications/notification.service.js'
+import type { VerifiedAllocationService } from '../../orders/order.public.js'
 import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
-import type { createVerifiedAllocationService } from '../../orders/order-allocation.service.js'
-import { paymentRecordModels, collectionAmounts } from './payment-record.model.js'
-import { paymentModel } from '../payment.model.js'
+
+import { createCorrectionObligationService } from '../../refunds/obligations/correction-obligation.service.js'
 import { paymentInitiationModel } from '../attempts/payment-initiation.model.js'
-import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 import { verifyPaymentInitiationPersistence } from '../attempts/payment-initiation.persistence.js'
-import type { createPaymentVerificationService } from './payment-verification.service.js'
+import { paymentModel } from '../payment.model.js'
 import type { PaymentCallbackClaim } from './payment-callback.service.js'
+import { collectionAmounts, paymentRecordModels } from './payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
+import { createPaymentSettlementService } from './payment-settlement.service.js'
+import type { createPaymentVerificationService } from './payment-verification.service.js'
 
 type Verifier = ReturnType<typeof createPaymentVerificationService>
 
@@ -45,16 +46,17 @@ function createPaymentProcessingService(
   connection: Connection,
   verifier: Verifier,
   orders: ReturnType<typeof verifiedFundingOrderAccess>,
-  allocation: ReturnType<typeof createVerifiedAllocationService>,
+  allocation: VerifiedAllocationService,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   const { attempts, intake, collections } = paymentRecordModels(connection),
     payments = paymentModel(connection),
     initiations = paymentInitiationModel(connection),
-    audit = createAuditWriter(connection, true),
+    audit = auditAccess.replay,
     notifications = createNotificationService(connection, clock),
-    corrections = createCorrectionObligationService(connection),
-    settlement = createPaymentSettlementService(connection, orders, allocation, clock)
+    corrections = createCorrectionObligationService(connection, auditAccess),
+    settlement = createPaymentSettlementService(connection, orders, allocation, auditAccess, clock)
   async function applyReceipt(session: ClientSession, receipt: Receipt, now: Date) {
     const collectedAt = collectionTime(receipt.providerCollectedAt)
     if (

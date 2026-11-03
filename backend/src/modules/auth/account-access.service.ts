@@ -1,11 +1,11 @@
-import { type Connection, type ClientSession, Types } from 'mongoose'
-import type { AdminAccountAccess, CustomerProfile, CustomerAccountAccess } from './auth.public.js'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { inTransaction } from '../../shared/database/transaction.js'
-import { authorizeAccount } from './sessions/authorization.service.js'
-import type { IdentityModels } from './auth.model.js'
-import type { SessionService } from './sessions/session.service.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+import type { IdentityModels } from './auth.model.js'
+import type { AdminAccountAccess, CustomerAccountAccess, CustomerProfile } from './auth.public.js'
 import { accountDto } from './credentials/account.dto.js'
+import { authorizeAccount } from './sessions/authorization.service.js'
+import type { SessionService } from './sessions/session.service.js'
 
 // Domain coordinators with an existing transaction reuse the same authorization fences.
 function adminTransactionAccess(
@@ -153,10 +153,10 @@ function createCustomerAccountAccess(
   }
 }
 
+export type { AdminAccountAccess, CustomerAccountAccess, CustomerProfile }
 export {
   adminTransactionAccess,
   createAdminAccountAccess,
-  createMediaAdminAccess,
   createCustomerAccountAccess,
+  createMediaAdminAccess,
 }
-export type { AdminAccountAccess, CustomerProfile, CustomerAccountAccess }

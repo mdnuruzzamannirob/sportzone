@@ -1,6 +1,6 @@
-import { validateSessionOptions, type SessionOptions } from '../../../config/security.js'
-import type { Types, Connection, ClientSession } from 'mongoose'
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import type { ClientSession, Connection, Types } from 'mongoose'
+import { type SessionOptions, validateSessionOptions } from '../../../config/security.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import type { IdentityModels } from '../auth.model.js'
@@ -262,5 +262,5 @@ function createSessionService(
 type SessionService = ReturnType<typeof createSessionService>
 
 export { loadSessionOptions } from '../../../config/security.js'
+export type { IssuedSession, SessionIdentity, SessionKind, SessionOptions, SessionService }
 export { createSessionService, validateSessionOptions }
-export type { SessionKind, SessionIdentity, IssuedSession, SessionService, SessionOptions }

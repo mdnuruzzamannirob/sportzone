@@ -1,15 +1,16 @@
+import { type RequestHandler, Router } from 'express'
+import type { BrowserSecurity, SessionCookies } from '../auth/auth.public.js'
 import { createCheckoutController } from './checkout.controller.js'
 import type { createCheckoutIntentService, createCheckoutQuoteService } from './checkout.service.js'
-import { Router, type RequestHandler } from 'express'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
 
 function createCheckoutRoutes(
   service: Pick<ReturnType<typeof createCheckoutQuoteService>, 'create'>,
   security: BrowserSecurity,
   throttle: RequestHandler,
-  submission?: Pick<ReturnType<typeof createCheckoutIntentService>, 'submitWithOutcome'>,
+  submission: Pick<ReturnType<typeof createCheckoutIntentService>, 'submitWithOutcome'> | undefined,
+  cookies: SessionCookies,
 ) {
-  const controller = createCheckoutController(service)
+  const controller = createCheckoutController(service, cookies)
 
   const router = Router()
   router.options('/checkout/quotes', security.cors('storefront'))

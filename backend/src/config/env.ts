@@ -1,16 +1,15 @@
-import {
-  validateSessionOptions,
-  validateBrowserSecurityOptions,
-  securitySecretSchema,
-  loadRecoveryOptions,
-  loadEmailVerificationOptions,
-  loadEmailChangeOptions,
-  loadAdminRecoveryOptions,
-  loadGuestAccessOptions,
-} from './security.js'
-import { ConfigurationError } from '../shared/errors/configuration-error.js'
-
 import { z } from 'zod'
+import { ConfigurationError } from '../shared/errors/configuration-error.js'
+import {
+  loadAdminRecoveryOptions,
+  loadEmailChangeOptions,
+  loadEmailVerificationOptions,
+  loadGuestAccessOptions,
+  loadRecoveryOptions,
+  securitySecretSchema,
+  validateBrowserSecurityOptions,
+  validateSessionOptions,
+} from './security.js'
 
 const origin = z.string().transform((value, ctx) => {
   try {
@@ -285,5 +284,5 @@ function loadEnvironment(environment: NodeJS.ProcessEnv): RuntimeConfig {
 }
 
 export { ConfigurationError } from '../shared/errors/configuration-error.js'
-export { loadEnvironment }
 export type { IdentityConfig, RuntimeConfig }
+export { loadEnvironment }

@@ -2,13 +2,14 @@ import type { ClientSession, Connection } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+
 import { createAllocationService } from '../inventory/inventory.service.js'
-import {
-  createCouponAllocationService,
-  couponGenerationAccess,
-} from '../promotions/promotion.service.js'
 import { pricingInput } from '../promotions/pricing.schema.js'
-import { createAuditWriter } from '../audit/audit.service.js'
+import {
+  couponGenerationAccess,
+  createCouponAllocationService,
+} from '../promotions/promotion.service.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 
@@ -270,11 +271,12 @@ function createFulfillmentAllocationService(
 function createPaymentAllocationService(
   connection: Connection,
   access: OrderAllocationAccess,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   const stock = createAllocationService(connection, undefined, clock),
     coupon = couponGenerationAccess(connection),
-    audit = createAuditWriter(connection)
+    audit = auditAccess.write
   return {
     async ensure(session: ClientSession, orderId: string) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -350,6 +352,7 @@ function createPaymentAllocationService(
 // capacity failure never rolls back a separately committed verified receipt.
 function createVerifiedAllocationService(
   connection: Connection,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   const stock = createAllocationService(connection, undefined, clock),
@@ -385,6 +388,7 @@ function createVerifiedAllocationService(
             return { ...binding, generation: gen }
           },
         },
+        auditAccess,
         clock,
       )
       await preparation.ensure(session, orderId)
@@ -448,12 +452,12 @@ function createVerifiedAllocationService(
   return service
 }
 
+export type { OrderAllocationAccess }
 export {
   createCancellationAllocationService,
-  createOrderAllocationService,
-  orderAllocationBinding,
   createFulfillmentAllocationService,
+  createOrderAllocationService,
   createPaymentAllocationService,
   createVerifiedAllocationService,
+  orderAllocationBinding,
 }
-export type { OrderAllocationAccess }

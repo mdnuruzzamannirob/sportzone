@@ -1,10 +1,10 @@
-import {
-  validateBrowserSecurityOptions,
-  type BrowserSecurityOptions,
-} from '../../../config/security.js'
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import type { RequestHandler } from 'express'
 import type { ClientSession, Connection } from 'mongoose'
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import {
+  type BrowserSecurityOptions,
+  validateBrowserSecurityOptions,
+} from '../../../config/security.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import type { IdentityModels } from '../auth.model.js'
@@ -263,10 +263,10 @@ function logoutProtection(
 }
 
 export { loadBrowserSecurityOptions } from '../../../config/security.js'
-export {
-  readContextCookie,
-  createBrowserSecurity,
-  validateBrowserSecurityOptions,
-  logoutProtection,
-}
 export type { BrowserAudience, BrowserSecurity, BrowserSecurityOptions }
+export {
+  createBrowserSecurity,
+  logoutProtection,
+  readContextCookie,
+  validateBrowserSecurityOptions,
+}

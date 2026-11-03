@@ -1,17 +1,14 @@
 import { createHash } from 'node:crypto'
-import type { MediaFormat, MediaLookup, MediaProvider } from '../../modules/media/media.types.js'
+import type { MediaFormat, MediaLookup, MediaProvider } from '../../modules/media/media.public.js'
 import { assertOutsideTransaction } from '../../shared/database/transaction.js'
 import {
   assetSchema,
+  type CloudinaryOptions,
   deletionSchema,
   identity,
   validateCloudinaryOptions,
-  type CloudinaryOptions,
 } from './cloudinary.schema.js'
-export {
-  validateCloudinaryOptions,
-  type CloudinaryOptions,
-} from './cloudinary.schema.js'
+
 async function body(response: Response): Promise<unknown> {
   const reader = response.body?.getReader()
   if (!reader) throw new Error('Missing provider response')
@@ -29,7 +26,7 @@ async function body(response: Response): Promise<unknown> {
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
-export function createCloudinaryAdapter(
+function createCloudinaryAdapter(
   input: CloudinaryOptions,
   transport: typeof fetch = fetch,
   clock: () => Date = () => new Date(),
@@ -175,7 +172,7 @@ export function createCloudinaryAdapter(
 }
 
 // Read-only credential/reachability probe. This does not qualify upload or delivery security.
-export async function checkCloudinaryConnection(
+async function checkCloudinaryConnection(
   input: CloudinaryOptions,
   transport: typeof fetch = fetch,
 ): Promise<'verified' | 'unauthorized' | 'unavailable'> {
@@ -204,3 +201,9 @@ export async function checkCloudinaryConnection(
     return 'unavailable'
   }
 }
+
+export {
+  type CloudinaryOptions,
+  validateCloudinaryOptions,
+} from './cloudinary.schema.js'
+export { checkCloudinaryConnection, createCloudinaryAdapter }

@@ -1,8 +1,8 @@
-import { createCustomerController, createCustomerAdminController } from './customer.controller.js'
-import type { BrowserRouteAccess, CustomerAdministration } from '../auth/auth.public.js'
 import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
+import type { BrowserRouteAccess, CustomerAdministration } from '../auth/auth.public.js'
+import { createCustomerAdminController, createCustomerController } from './customer.controller.js'
 import type { CustomerService } from './customer.service.js'
 
 function createCustomerRoutes(service: CustomerService, security: BrowserRouteAccess) {
@@ -77,4 +77,4 @@ function createCustomerAdminRoutes(service: CustomerAdministration, security: Br
   return router
 }
 
-export { createCustomerRoutes, createCustomerAdminRoutes }
+export { createCustomerAdminRoutes, createCustomerRoutes }

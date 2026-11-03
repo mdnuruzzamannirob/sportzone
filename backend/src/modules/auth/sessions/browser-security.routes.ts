@@ -1,9 +1,9 @@
-import { createBrowserSecurityController } from './browser-security.controller.js'
-import { Router, type RequestHandler } from 'express'
-import { localAuthRateLimit } from './auth-throttle.service.js'
+import { type RequestHandler, Router } from 'express'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import type { SessionService } from './session.service.js'
+import { localAuthRateLimit } from './auth-throttle.service.js'
+import { createBrowserSecurityController } from './browser-security.controller.js'
 import type { BrowserSecurity } from './browser-security.service.js'
+import type { SessionService } from './session.service.js'
 
 // Guest persistence is owned by P06-015; this adapter must verify the exact order scope,
 // expiry and revocation. Never substitute a customer/browser credential for a guest one.
@@ -74,5 +74,5 @@ function requireGuestCsrf(
   }
 }
 
-export { createBrowserSecurityRoutes, requireGuestCsrf }
 export type { GuestCsrfAdapter }
+export { createBrowserSecurityRoutes, requireGuestCsrf }

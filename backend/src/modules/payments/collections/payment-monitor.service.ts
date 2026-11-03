@@ -1,29 +1,27 @@
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
+import { ApiError } from '../../../shared/errors/app-error.js'
+import { parseInput } from '../../../shared/middleware/validate.js'
+import { pageMeta } from '../../../shared/pagination.js'
+import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import { paymentAuditAccess } from '../../audit/audit.service.js'
 import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import {
-  createAuditWriter,
-  auditOperationReader,
-  paymentAuditAccess,
-} from '../../audit/audit.service.js'
 import { correctionMonitoringAccess } from '../../refunds/obligations/correction-obligation.service.js'
-import { paymentModel, type Payment } from '../payment.model.js'
-import { paymentRecordModels } from './payment-record.model.js'
-import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
-import { paymentInitiationKey } from '../attempts/payment-initiation.schema.js'
+
+import { type Payment, paymentModel } from '../payment.model.js'
 import {
+  monitorId,
+  paymentMonitorDetail,
+  paymentMonitorList,
+  paymentMonitorPage,
   paymentMonitorQuery,
+  paymentReconcileInput,
   providerReceipt,
   providerReceiptQuery,
-  paymentMonitorPage,
-  paymentMonitorList,
-  paymentMonitorDetail,
-  paymentReconcileInput,
-  monitorId,
 } from './payment-monitor.schema.js'
-import { pageMeta } from '../../../shared/pagination.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
-import { ApiError } from '../../../shared/errors/app-error.js'
+import { paymentRecordModels } from './payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 
 const hash = (v: string) => createHash('sha256').update(v).digest('hex')
 
@@ -48,11 +46,15 @@ const summary = (
   revision: r.revision,
 })
 
-function createPaymentMonitorService(connection: Connection, access: AdminAccountAccess) {
+function createPaymentMonitorService(
+  connection: Connection,
+  access: AdminAccountAccess,
+  auditAccess: AuditAccess,
+) {
   const payments = paymentModel(connection),
     { attempts, collections, intake } = paymentRecordModels(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection),
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup,
     readAudit = paymentAuditAccess(connection),
     corrections = correctionMonitoringAccess(connection)
   async function ready() {

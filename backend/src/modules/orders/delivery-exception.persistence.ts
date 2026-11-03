@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { deliveryExceptionModel } from './delivery-exception.model.js'
 
@@ -173,7 +173,7 @@ async function initializeDeliveryExceptionPersistence(connection: Connection) {
 }
 
 export {
-  verifyDeliveryExceptionPersistence,
-  initializeDeliveryExceptionPersistence,
   deliveryExceptionValidator,
+  initializeDeliveryExceptionPersistence,
+  verifyDeliveryExceptionPersistence,
 }

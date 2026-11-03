@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { money, text } from '../catalog.schema.js'
+import { boundedText as text } from '../../../shared/validation.js'
+import { money } from '../catalog.schema.js'
 
 const sku = text(64)
   .transform((value) => value.toUpperCase())
@@ -133,14 +134,14 @@ const variantPatch = z
 const variantDeactivate = z.strictObject({ reason: z.string().trim().min(1).max(2000) })
 
 export {
-  attributeSignature,
-  sku,
-  attributes,
-  variantInput,
-  variantBatch,
-  variantStockView,
   adminVariant,
+  attributeSignature,
+  attributes,
+  sku,
+  variantBatch,
+  variantDeactivate,
+  variantInput,
   variantParams,
   variantPatch,
-  variantDeactivate,
+  variantStockView,
 }

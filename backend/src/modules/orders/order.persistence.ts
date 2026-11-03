@@ -2,7 +2,7 @@ import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { orderModels } from './order.model.js'
-import { fulfillmentStatus, fulfillmentHold } from './order.schema.js'
+import { fulfillmentHold, fulfillmentStatus } from './order.schema.js'
 
 type Shape = Record<string, unknown>
 
@@ -464,8 +464,8 @@ async function migrateOrderPrepaidTiming(connection: Connection) {
 
 export {
   initializeOrderPersistence,
-  verifyOrderPersistence,
   migrateOrderPostalCode,
   migrateOrderPrepaidTiming,
   orderValidators,
+  verifyOrderPersistence,
 }

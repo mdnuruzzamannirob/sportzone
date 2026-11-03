@@ -1,7 +1,7 @@
 import { Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../../shared/database/schema.js'
+import { embedded, text } from '../model-fields.js'
 import { attributeSignature, attributes, sku } from './variant.schema.js'
-import { text, embedded } from '../model-fields.js'
 
 const stock = new Schema(
   {

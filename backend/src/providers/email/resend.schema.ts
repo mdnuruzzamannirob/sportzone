@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ConfigurationError } from '../../shared/errors/configuration-error.js'
 
-export type EmailOptions = {
+type EmailOptions = {
   apiKey: string
   from: string
   timeoutMs: number
@@ -17,7 +17,7 @@ const optionsSchema = z.strictObject({
   timeoutMs: z.int().min(1).max(60000),
   recipientOverride: z.email().max(254).optional(),
 })
-export function validateEmailOptions(input: EmailOptions): Readonly<EmailOptions> {
+function validateEmailOptions(input: EmailOptions): Readonly<EmailOptions> {
   const result = optionsSchema.safeParse(input)
   if (!result.success) throw new ConfigurationError(['email_configuration'])
   return Object.freeze({
@@ -27,7 +27,7 @@ export function validateEmailOptions(input: EmailOptions): Readonly<EmailOptions
     ...(result.data.recipientOverride ? { recipientOverride: result.data.recipientOverride } : {}),
   })
 }
-export const emailMessageSchema = z.strictObject({
+const emailMessageSchema = z.strictObject({
   to: z.email().max(254),
   subject: z
     .string()
@@ -42,10 +42,13 @@ export const emailMessageSchema = z.strictObject({
     .regex(/^[A-Za-z0-9_-]+$/),
 })
 
-export const emailAcceptanceSchema = z.object({
+const emailAcceptanceSchema = z.object({
   id: z
     .string()
     .min(1)
     .max(128)
     .regex(/^[A-Za-z0-9_-]+$/),
 })
+
+export type { EmailOptions }
+export { emailAcceptanceSchema, emailMessageSchema, validateEmailOptions }

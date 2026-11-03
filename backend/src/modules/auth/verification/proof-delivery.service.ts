@@ -1,7 +1,7 @@
 import type { Types } from 'mongoose'
 import type { IdentityModels } from '../auth.model.js'
-import { createProofCodec, proofHash, type ProofEnvelope } from './proof.crypto.js'
 import type { RecoveryOptions } from '../recovery/password-recovery.service.js'
+import { createProofCodec, type ProofEnvelope, proofHash } from './proof.crypto.js'
 
 function createDelivery(
   models: IdentityModels,
@@ -142,10 +142,10 @@ const createEmailVerificationDelivery = (
   clock: () => Date = () => new Date(),
 ) => createDelivery(models, options, clock, 'email_verify')
 
-export {
-  createResetDelivery,
-  createEmailChangeDelivery,
-  createAdminResetDelivery,
-  createEmailVerificationDelivery,
-}
 export type { ResetDelivery }
+export {
+  createAdminResetDelivery,
+  createEmailChangeDelivery,
+  createEmailVerificationDelivery,
+  createResetDelivery,
+}

@@ -14,4 +14,10 @@ type AuditOperationReader = (
   | undefined
 >
 
-export type { AuditWriter, AuditOperationReader }
+interface AuditAccess {
+  write: AuditWriter
+  replay: AuditWriter
+  lookup: AuditOperationReader
+}
+
+export type { AuditAccess, AuditOperationReader, AuditWriter }

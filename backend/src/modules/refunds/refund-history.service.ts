@@ -1,27 +1,25 @@
-import { refundHistoryQuery as query, refundHistoryView } from './refund-api.schema.js'
-import type { Connection, ClientSession } from 'mongoose'
+import type { ClientSession, Connection } from 'mongoose'
 import { z } from 'zod'
-import type {
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-} from '../auth/checkout-access.service.js'
-import type { complaintOrderAccess, customerOrderHistoryAccess } from '../orders/order.service.js'
-import { refundStatusTimelineAccess } from '../audit/audit.service.js'
-import { refundModel } from './refund.model.js'
-import { refundAttemptModel } from './payouts/refund-attempt.model.js'
-import { verifyRefundAttemptPersistence } from './payouts/refund-attempt.persistence.js'
-import { verifyCorrectionPersistence } from './refund.persistence.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
+import { refundStatusTimelineAccess } from '../audit/audit.service.js'
+import type { OrderScopeAccess, PaymentInitiationCredentials } from '../auth/auth.public.js'
+import type { CustomerOrderHistoryAccess } from '../orders/order.public.js'
+import type { complaintOrderAccess } from '../orders/order.service.js'
+import { refundAttemptModel } from './payouts/refund-attempt.model.js'
+import { verifyRefundAttemptPersistence } from './payouts/refund-attempt.persistence.js'
+import { refundModel } from './refund.model.js'
+import { verifyCorrectionPersistence } from './refund.persistence.js'
+import { refundHistoryQuery as query, refundHistoryView } from './refund-api.schema.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 
 function createRefundHistoryService(
   connection: Connection,
-  scope: ReturnType<typeof orderScopeAccess>,
+  scope: OrderScopeAccess,
   order: ReturnType<typeof complaintOrderAccess>,
-  customerOrders: ReturnType<typeof customerOrderHistoryAccess>,
+  customerOrders: CustomerOrderHistoryAccess,
 ) {
   const model = refundModel(connection),
     attempts = refundAttemptModel(connection),
@@ -293,4 +291,4 @@ function refundExceptionQueueAccess(connection: Connection) {
   }
 }
 
-export { createRefundHistoryService, refundReportAccess, refundExceptionQueueAccess }
+export { createRefundHistoryService, refundExceptionQueueAccess, refundReportAccess }

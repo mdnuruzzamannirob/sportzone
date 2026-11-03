@@ -1,22 +1,23 @@
-import { refundApproval } from '../obligations/refund-reservation.schema.js'
-import { refundManualInput } from '../refund-api.schema.js'
-import type { createRefundReservationService } from '../obligations/refund-reservation.service.js'
 import { createHash } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
-import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { refundFundingAccess } from '../../payments/payment.service.js'
-import type { refundUnitOutcomeAccess } from '../../orders/order.service.js'
-import type { createSslcommerzAdapter } from '../../../providers/sslcommerz/sslcommerz.client.js'
-import { createAuditWriter, auditOperationReader } from '../../audit/audit.service.js'
 import { assertOutsideTransaction, inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import type { AdminAccountAccess } from '../../auth/auth.public.js'
+import type { RefundUnitOutcomeAccess } from '../../orders/order.public.js'
+import type { PaymentGateway, RefundFundingAccess } from '../../payments/payment.public.js'
+
+import { refundApproval } from '../obligations/refund-reservation.schema.js'
+import type { createRefundReservationService } from '../obligations/refund-reservation.service.js'
 import { refundModel } from '../refund.model.js'
-import { refundAttemptModel } from './refund-attempt.model.js'
 import { verifyCorrectionPersistence } from '../refund.persistence.js'
+import type { RefundNotifier } from '../refund.public.js'
+import { refundManualInput } from '../refund-api.schema.js'
+import { refundAttemptModel } from './refund-attempt.model.js'
 import { verifyRefundAttemptPersistence } from './refund-attempt.persistence.js'
-import { refundOutcomeProof, type RefundOutcomeVerifier } from './refund-outcome.schema.js'
+import { type RefundOutcomeVerifier, refundOutcomeProof } from './refund-outcome.schema.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/),
   text = z
@@ -36,35 +37,25 @@ const keySchema = z
 
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 
-type RefundNotifier = (
-  session: ClientSession,
-  input: {
-    refundId: string
-    orderId: string
-    status: 'approved' | 'processing' | 'completed' | 'failed' | 'rejected'
-    operationKey: string
-    occurredAt: Date
-  },
-) => Promise<void>
-
 function createRefundRecoveryService(
   connection: Connection,
   admins: AdminAccountAccess,
-  funding: ReturnType<typeof refundFundingAccess>,
-  units: ReturnType<typeof refundUnitOutcomeAccess>,
+  funding: RefundFundingAccess,
+  units: RefundUnitOutcomeAccess,
+  auditAccess: AuditAccess,
   verifyEvidence?: RefundOutcomeVerifier,
   gateway?: {
-    client: Pick<ReturnType<typeof createSslcommerzAdapter>, 'queryRefund'>
+    client: Pick<PaymentGateway, 'queryRefund'>
     merchantAccountKey: string
   },
   notify?: RefundNotifier,
   clock: () => Date = () => new Date(),
-  methodPolicy?: Parameters<typeof createRefundReservationService>[6],
+  methodPolicy?: Parameters<typeof createRefundReservationService>[7],
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   async function ready() {
     await verifyCorrectionPersistence(connection)
     await verifyRefundAttemptPersistence(connection)
@@ -1003,6 +994,7 @@ function createRefundRecoveryService(
 function refundNotificationProofAccess(
   connection: Connection,
   order: ReturnType<typeof import('../../orders/order.service.js').returnNotificationOrderAccess>,
+  auditAccess: AuditAccess,
 ) {
   return async (input: {
     refundId: string
@@ -1017,7 +1009,7 @@ function refundNotificationProofAccess(
         .findOne({ _id: input.refundId, orderId: input.orderId })
         .session(session)
       if (!row) return undefined
-      const audit = await auditOperationReader(connection)(session, {
+      const audit = await auditAccess.lookup(session, {
         action: `refund.notification.${input.status}`,
         targetType: 'refund',
         targetId: input.refundId,
@@ -1044,5 +1036,5 @@ function refundNotificationProofAccess(
     })
 }
 
-export { createRefundRecoveryService, refundNotificationProofAccess }
 export type { RefundNotifier }
+export { createRefundRecoveryService, refundNotificationProofAccess }

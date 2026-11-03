@@ -62,10 +62,10 @@ const customerPrivacyResult = z.strictObject({
 
 export {
   customerAdminQuery,
-  customerStatusDecision,
-  customerStatusResult,
   customerAdminView,
-  customerPrivacyView,
   customerPrivacyDecision,
   customerPrivacyResult,
+  customerPrivacyView,
+  customerStatusDecision,
+  customerStatusResult,
 }

@@ -1,14 +1,14 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../../shared/database/indexes.js'
-import {
-  paymentRecordModels,
-  attemptStates,
-  amountDispositions,
-  collectionAmounts,
-} from './payment-record.model.js'
-import { initializePaymentPersistence, verifyPaymentPersistence } from '../payment.persistence.js'
 import { paymentModel } from '../payment.model.js'
+import { initializePaymentPersistence, verifyPaymentPersistence } from '../payment.persistence.js'
+import {
+  amountDispositions,
+  attemptStates,
+  collectionAmounts,
+  paymentRecordModels,
+} from './payment-record.model.js'
 
 const id = { bsonType: 'objectId' },
   date = { bsonType: 'date' },
@@ -347,6 +347,6 @@ async function verifyPaymentRecordPersistence(connection: Connection) {
 
 export {
   initializePaymentRecordPersistence,
-  verifyPaymentRecordPersistence,
   paymentRecordValidators,
+  verifyPaymentRecordPersistence,
 }

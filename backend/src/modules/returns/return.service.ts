@@ -1,45 +1,48 @@
-import {
-  claimHistoryQuery as adminQuery,
-  claimHistoryView,
-  claimId,
-  claimText,
-  claimAuthority,
-  claimCommand,
-  claimReviewInput,
-  claimReceiptInput,
-  claimUploadInput,
-} from './return.schema.js'
-import { type Connection, type HydratedDocument, type ClientSession, Types } from 'mongoose'
-import type {
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-  OrderPrincipal,
-} from '../auth/checkout-access.service.js'
-import type {
-  complaintOrderAccess,
-  customerOrderHistoryAccess,
-  claimReviewQuantityAccess,
-  returnNotificationOrderAccess,
-  claimQuantityAccess,
-  claimEligibilitySnapshotAccess,
-  claimRestockAccess,
-} from '../orders/order.service.js'
-import type { claimEvidenceMetadataAccess } from '../media/attachment.service.js'
-import type { AdminAccountAccess } from '../auth/auth.public.js'
-import { pageMeta } from '../../shared/pagination.js'
+import { createHash } from 'node:crypto'
+import { type ClientSession, type Connection, type HydratedDocument, Types } from 'mongoose'
+import { z } from 'zod'
+import { inTransaction } from '../../shared/database/transaction.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { returnModel } from './return.model.js'
-import { verifyReturnPersistence } from './return.persistence.js'
-import { createHash } from 'node:crypto'
-import { z } from 'zod'
-import { auditOperationReader, createAuditWriter } from '../audit/audit.service.js'
-import { paymentInitiationKey } from '../payments/attempts/payment-initiation.schema.js'
-import { inTransaction } from '../../shared/database/transaction.js'
+import { pageMeta } from '../../shared/pagination.js'
+import { idempotencyKey as paymentInitiationKey } from '../../shared/validation.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+import type {
+  AdminAccountAccess,
+  OrderPrincipal,
+  OrderScopeAccess,
+  PaymentInitiationCredentials,
+} from '../auth/auth.public.js'
+import type { ReturnReceiptService } from '../inventory/inventory.public.js'
+import type { ClaimEvidenceMetadataAccess } from '../media/media.public.js'
 import { type MediaService, verifyMediaPersistence } from '../media/media.service.js'
 import type { MediaFile } from '../media/media.types.js'
+import type {
+  ClaimEligibilitySnapshotAccess,
+  ClaimQuantityAccess,
+  ClaimRestockAccess,
+  ClaimReviewQuantityAccess,
+  CustomerOrderHistoryAccess,
+} from '../orders/order.public.js'
+import type {
+  complaintOrderAccess,
+  returnNotificationOrderAccess,
+} from '../orders/order.service.js'
+
+import { returnModel } from './return.model.js'
+import { verifyReturnPersistence } from './return.persistence.js'
 import type { createReturnEligibilityService } from './return.policy.js'
-import type { createReturnReceiptService } from '../inventory/inventory.service.js'
+import {
+  claimHistoryQuery as adminQuery,
+  claimAuthority,
+  claimCommand,
+  claimHistoryView,
+  claimId,
+  claimReceiptInput,
+  claimReviewInput,
+  claimText,
+  claimUploadInput,
+} from './return.schema.js'
 
 type Row = HydratedDocument<
   import('mongoose').InferSchemaType<ReturnType<typeof returnModel>['schema']>
@@ -48,11 +51,11 @@ type Row = HydratedDocument<
 // Local-only read composition: scope and order ownership are both checked server-side.
 function createReturnHistoryService(
   connection: Connection,
-  scope: ReturnType<typeof orderScopeAccess>,
+  scope: OrderScopeAccess,
   order: ReturnType<typeof complaintOrderAccess>,
-  evidence: ReturnType<typeof claimEvidenceMetadataAccess>,
+  evidence: ClaimEvidenceMetadataAccess,
   admins?: AdminAccountAccess,
-  customerOrders?: ReturnType<typeof customerOrderHistoryAccess>,
+  customerOrders?: CustomerOrderHistoryAccess,
 ) {
   const model = returnModel(connection)
   async function view(session: ClientSession, row: Row) {
@@ -233,7 +236,8 @@ const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 function createReturnLifecycleService(
   connection: Connection,
   admin: AdminAccountAccess,
-  quantities: ReturnType<typeof claimReviewQuantityAccess>,
+  quantities: ClaimReviewQuantityAccess,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
   notify?: (
     session: import('mongoose').ClientSession,
@@ -248,8 +252,8 @@ function createReturnLifecycleService(
   ) => Promise<void>,
 ) {
   const model = returnModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   return {
     async transition(token: string | undefined, rawId: unknown, raw: unknown, rawKey: unknown) {
       const id = parseInput(claimId, rawId),
@@ -410,11 +414,12 @@ function createReturnLifecycleService(
 // Private foundation only: no root/HTTP activation before eligibility and lifecycle tasks.
 function createReturnService(
   connection: Connection,
-  quantities: ReturnType<typeof claimQuantityAccess>,
+  quantities: ClaimQuantityAccess,
   authorize: (
     session: ClientSession,
     command: ReturnType<typeof claimCommand.parse>,
   ) => Promise<unknown>,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
   evidence?: {
     attach: MediaService['attach']
@@ -422,7 +427,7 @@ function createReturnService(
   },
 ) {
   const model = returnModel(connection),
-    audit = createAuditWriter(connection)
+    audit = auditAccess.write
   return {
     async create(session: ClientSession, raw: unknown) {
       if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
@@ -556,9 +561,10 @@ function refundClaimSnapshotAccess(connection: Connection) {
 function returnNotificationProofAccess(
   connection: Connection,
   order: ReturnType<typeof returnNotificationOrderAccess>,
+  auditAccess: AuditAccess,
 ) {
   const model = returnModel(connection),
-    lookup = auditOperationReader(connection)
+    lookup = auditAccess.lookup
   const event = z.strictObject({
     orderId: claimCommand.shape.orderId,
     returnId: claimCommand.shape.claimId,
@@ -640,9 +646,9 @@ const returnOperationsHash = (value: string) => createHash('sha256').update(valu
 function createReturnOperationsService(
   connection: Connection,
   dependencies: {
-    scope: ReturnType<typeof orderScopeAccess>
-    order: ReturnType<typeof claimEligibilitySnapshotAccess>
-    quantities: ReturnType<typeof claimQuantityAccess>
+    scope: OrderScopeAccess
+    order: ClaimEligibilitySnapshotAccess
+    quantities: ClaimQuantityAccess
     eligibility: ReturnType<typeof createReturnEligibilityService>
     history: ReturnType<typeof createReturnHistoryService>
     administration?: {
@@ -656,9 +662,10 @@ function createReturnOperationsService(
       mutating?: boolean,
     ) => MediaService
   },
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
-  const lookup = auditOperationReader(connection),
+  const lookup = auditAccess.lookup,
     model = returnModel(connection)
   return {
     async review(token: string | undefined, id: string, raw: unknown, rawKey: unknown) {
@@ -811,6 +818,7 @@ function createReturnOperationsService(
             connection,
             dependencies.quantities,
             (session, command) => dependencies.eligibility(session, principal, command),
+            auditAccess,
             clock,
             media ? { attach: media.attach } : undefined,
           )
@@ -922,13 +930,14 @@ const returnPhysicalHash = (text: string) => createHash('sha256').update(text).d
 function createReturnPhysicalService(
   connection: Connection,
   admin: AdminAccountAccess,
-  restock: ReturnType<typeof claimRestockAccess>,
-  receipt: ReturnType<typeof createReturnReceiptService>,
+  restock: ClaimRestockAccess,
+  receipt: ReturnReceiptService,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   const model = returnModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   async function perform(
     token: string | undefined,
     rawId: unknown,
@@ -1130,8 +1139,8 @@ export {
   createReturnOperationsService,
   createReturnPhysicalService,
   createReturnService,
+  refundClaimSelectionAccess,
   refundClaimSnapshotAccess,
   returnNotificationProofAccess,
   returnReportAccess,
-  refundClaimSelectionAccess,
 }

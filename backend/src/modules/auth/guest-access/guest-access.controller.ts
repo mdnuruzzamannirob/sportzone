@@ -1,16 +1,16 @@
 import type { RequestHandler } from 'express'
 import { z } from 'zod'
-import type { createGuestAccessService } from './guest-access.service.js'
-import { type GuestSessions, readGuestCookie } from './guest-session.service.js'
+import { parseInput } from '../../../shared/middleware/validate.js'
+import { respond } from '../../../shared/responses.js'
+import { type BrowserSecurity, readContextCookie } from '../sessions/browser-security.service.js'
 import {
   guestAccepted,
   guestExchangeView,
-  guestSessionView,
   guestLogoutView,
+  guestSessionView,
 } from './guest-access.schema.js'
-import { type BrowserSecurity, readContextCookie } from '../sessions/browser-security.service.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
-import { respond } from '../../../shared/responses.js'
+import type { createGuestAccessService } from './guest-access.service.js'
+import { type GuestSessions, readGuestCookie } from './guest-session.service.js'
 
 function createGuestAccessController(
   service: ReturnType<typeof createGuestAccessService>,

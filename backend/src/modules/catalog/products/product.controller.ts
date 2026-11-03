@@ -2,13 +2,18 @@ import type { RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { respond } from '../../../shared/responses.js'
-import { readSessionCookie } from '../../auth/sessions/session.http.js'
-import { productParams } from './product.schema.js'
-import { variantParams } from './variant.schema.js'
-import type { createProductAdminService } from './product.service.js'
+import type { SessionCookies } from '../../auth/auth.public.js'
 
-function createProductAdminController(service: ReturnType<typeof createProductAdminService>) {
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'admin')
+import { productParams } from './product.schema.js'
+import type { createProductAdminService } from './product.service.js'
+import { variantParams } from './variant.schema.js'
+
+function createProductAdminController(
+  service: ReturnType<typeof createProductAdminService>,
+  cookies: SessionCookies,
+) {
+  const token = (req: import('express').Request) =>
+    cookies.readSessionCookie(req.get('Cookie'), 'admin')
   const pid = (req: import('express').Request) => parseInput(productParams, req.params).productId
   const vid = (req: import('express').Request) => parseInput(variantParams, req.params).variantId
   const noQuery = (req: import('express').Request) => parseInput(z.strictObject({}), req.query)

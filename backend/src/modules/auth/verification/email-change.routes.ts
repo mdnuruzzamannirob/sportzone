@@ -1,11 +1,11 @@
-import { createEmailChangeController } from './email-change.controller.js'
-import { Router, type RequestHandler } from 'express'
+import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { localAuthRateLimit } from '../sessions/auth-throttle.service.js'
-import type { EmailChangeService } from './email-change.service.js'
+import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import type { SessionService } from '../sessions/session.service.js'
+import { createEmailChangeController } from './email-change.controller.js'
+import type { EmailChangeService } from './email-change.service.js'
 
 function createEmailChangeRoutes(
   service: EmailChangeService,

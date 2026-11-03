@@ -6,4 +6,4 @@ const requestInput = z.strictObject({ newEmail: loginInput.shape.email })
 
 const confirmInput = z.strictObject({ token: z.string().regex(proofPattern) })
 
-export { requestInput, confirmInput }
+export { confirmInput, requestInput }

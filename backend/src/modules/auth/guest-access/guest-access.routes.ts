@@ -1,11 +1,11 @@
-import { createGuestAccessController } from './guest-access.controller.js'
-import { Router, type RequestHandler } from 'express'
+import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
+import { parseInput } from '../../../shared/middleware/validate.js'
+import { requireGuestCsrf } from '../sessions/browser-security.routes.js'
+import { type BrowserSecurity, readContextCookie } from '../sessions/browser-security.service.js'
+import { createGuestAccessController } from './guest-access.controller.js'
 import type { createGuestAccessService } from './guest-access.service.js'
 import type { GuestSessions } from './guest-session.service.js'
-import { type BrowserSecurity, readContextCookie } from '../sessions/browser-security.service.js'
-import { requireGuestCsrf } from '../sessions/browser-security.routes.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
 
 function createGuestAccessRoutes(
   service: ReturnType<typeof createGuestAccessService>,

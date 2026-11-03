@@ -1,48 +1,56 @@
-import {
-  createAccountManagementService,
-  customerReportAccess,
-} from './account-management.service.js'
-import type { AdminAccountAccess, CustomerHistories } from './auth.public.js'
-import type { AuditWriter, AuditOperationReader } from '../audit/audit.public.js'
-import { createEmailVerificationRoutes } from './verification/email-verification.routes.js'
-import { createEmailVerificationService } from './verification/email-verification.service.js'
-import {
-  createEmailVerificationDelivery,
-  createAdminResetDelivery,
-  createEmailChangeDelivery,
-  createResetDelivery,
-} from './verification/proof-delivery.service.js'
+import { Router } from 'express'
+import type { Connection } from 'mongoose'
+import type { IdentityConfig, RuntimeConfig } from '../../config/env.js'
+import type { AuditOperationReader, AuditWriter } from '../audit/audit.public.js'
+import type { IdentityNotifications } from '../notifications/notification.public.js'
 import type { GuestOrderAccess } from '../orders/order.public.js'
-import { createGuestSessionService } from './guest-access/guest-session.service.js'
-import { createGuestAccessService } from './guest-access/guest-access.service.js'
-import { createGuestAccessRoutes } from './guest-access/guest-access.routes.js'
-import { guestProofDelivery } from './guest-access/guest-proof-delivery.service.js'
 import {
   adminTransactionAccess,
   createAdminAccountAccess,
   createCustomerAccountAccess,
   createMediaAdminAccess,
 } from './account-access.service.js'
-import { Router } from 'express'
-import type { Connection } from 'mongoose'
-import type { IdentityConfig, RuntimeConfig } from '../../config/env.js'
-import type { IdentityNotifications } from '../notifications/notification.public.js'
+import {
+  createAccountManagementService,
+  customerReportAccess,
+} from './account-management.service.js'
 import { createIdentityModels } from './auth.model.js'
+import type {
+  AdminAccountAccess,
+  CustomerHistories,
+  SessionCookies,
+  SessionHttp,
+} from './auth.public.js'
 import {
   createAdminCredentialRoutes,
   createCustomerCredentialRoutes,
 } from './credentials/credential.routes.js'
 import { createCredentialService } from './credentials/credential.service.js'
+import { createGuestAccessRoutes } from './guest-access/guest-access.routes.js'
+import { createGuestAccessService } from './guest-access/guest-access.service.js'
+import { guestProofDelivery } from './guest-access/guest-proof-delivery.service.js'
+import { createGuestSessionService, readGuestCookie } from './guest-access/guest-session.service.js'
 import { verifyIdentityPersistence } from './identity.persistence.js'
 import { createRecoveryRoutes } from './recovery/password-recovery.routes.js'
 import { createRecoveryService } from './recovery/password-recovery.service.js'
 import { createAuthQuotaStore } from './sessions/auth-throttle.persistence.js'
 import { createAuthThrottle } from './sessions/auth-throttle.service.js'
 import { createBrowserSecurityRoutes } from './sessions/browser-security.routes.js'
-import { createBrowserSecurity } from './sessions/browser-security.service.js'
+import { createBrowserSecurity, readContextCookie } from './sessions/browser-security.service.js'
+import { createSessionHttp, readSessionCookie } from './sessions/session.http.js'
 import { createSessionService } from './sessions/session.service.js'
 import { createEmailChangeRoutes } from './verification/email-change.routes.js'
 import { createEmailChangeService } from './verification/email-change.service.js'
+import { createEmailVerificationRoutes } from './verification/email-verification.routes.js'
+import { createEmailVerificationService } from './verification/email-verification.service.js'
+import {
+  createAdminResetDelivery,
+  createEmailChangeDelivery,
+  createEmailVerificationDelivery,
+  createResetDelivery,
+} from './verification/proof-delivery.service.js'
+
+const sessionCookies: SessionCookies = { readSessionCookie, readContextCookie, readGuestCookie }
 
 async function createAuthRuntime(
   connection: Connection,
@@ -56,6 +64,7 @@ async function createAuthRuntime(
   const options = config.identity
   if (!options) throw new Error('Validated identity configuration required.')
   const sessions = createSessionService(connection, models, options.sessions)
+  const http: SessionHttp = { ...createSessionHttp(sessions), ...sessionCookies }
   const security = createBrowserSecurity(connection, models, sessions, options.browser)
   const quota = createAuthQuotaStore(connection)
   await quota.verify()
@@ -170,6 +179,7 @@ async function createAuthRuntime(
     )
   return {
     router,
+    http,
     sessions,
     security,
     throttle,
@@ -229,4 +239,4 @@ function customerAdministrationAccess(
   }
 }
 
-export { customerAdministrationAccess, createAuthRuntime, composeProofDeliveries }
+export { composeProofDeliveries, createAuthRuntime, customerAdministrationAccess, sessionCookies }

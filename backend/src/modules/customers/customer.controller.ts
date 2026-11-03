@@ -2,9 +2,9 @@ import type { Request, RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
+import type { BrowserRouteAccess, CustomerAdministration } from '../auth/auth.public.js'
 import { addressId } from './customer.schema.js'
 import type { CustomerService } from './customer.service.js'
-import type { BrowserRouteAccess, CustomerAdministration } from '../auth/auth.public.js'
 
 function createCustomerController(
   service: CustomerService,
@@ -107,4 +107,4 @@ function createCustomerAdminController(
   return { history, privacy, decidePrivacy, list, detail, decideStatus }
 }
 
-export { createCustomerController, createCustomerAdminController }
+export { createCustomerAdminController, createCustomerController }

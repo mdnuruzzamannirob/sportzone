@@ -1,8 +1,8 @@
 import type { RequestHandler } from 'express'
-import type { z } from 'zod'
-import type { customerAdminView, customerPrivacyView } from './account-management.schema.js'
-import type { pageMeta } from '../../shared/pagination.js'
 import type { ClientSession } from 'mongoose'
+import type { z } from 'zod'
+import type { pageMeta } from '../../shared/pagination.js'
+import type { customerAdminView, customerPrivacyView } from './account-management.schema.js'
 
 interface AdminAccountAccess {
   owned<T>(
@@ -121,12 +121,128 @@ interface BrowserRouteAccess {
   readToken(header: string | undefined): string | undefined
 }
 
+// Transport capabilities expose guards and cookie operations, never session persistence.
+interface SessionCookies {
+  readSessionCookie(header: string | undefined, kind: 'customer' | 'admin'): string | undefined
+  readContextCookie(
+    header: string | undefined,
+    audience: 'storefront' | 'admin',
+  ): string | undefined
+  readGuestCookie(header: string | undefined): string | undefined
+}
+interface SessionHttp extends SessionCookies {
+  require(kind: 'customer' | 'admin'): RequestHandler
+}
+
+interface BrowserSecurity {
+  cors(audience: 'storefront' | 'admin'): RequestHandler
+  require(
+    audience: 'storefront' | 'admin',
+    mode: 'context' | 'customer' | 'admin' | 'customer-or-context',
+  ): RequestHandler
+}
+interface ComplaintThrottle {
+  middleware(audience: 'customer', group: 'complaint'): RequestHandler
+}
+
+type CheckoutCredentials = {
+  customerPresent: boolean
+  customerToken?: string | undefined
+  contextToken?: string | undefined
+  csrfToken?: string | undefined
+}
+
+type CheckoutPrincipal = {
+  scopeType: 'customer' | 'guest_context'
+  scopeKeyHash: string
+  profile?: CustomerProfile
+}
+
+type PaymentInitiationCredentials = {
+  customerPresent: boolean
+  customerToken?: string | undefined
+  guestToken?: string | undefined
+  csrfToken?: string | undefined
+}
+
+type OrderPrincipal =
+  | {
+      kind: 'customer'
+      userId: string
+    }
+  | {
+      kind: 'guest_order'
+      guestSessionId: string
+      orderId: string
+    }
+
+interface CheckoutAccess {
+  owned<T>(
+    credentials: CheckoutCredentials,
+    work: (principal: CheckoutPrincipal, session: ClientSession) => Promise<T>,
+  ): Promise<T>
+}
+
+interface PaymentMethodAccess {
+  owned<T>(
+    credentials: Pick<
+      PaymentInitiationCredentials,
+      'customerPresent' | 'customerToken' | 'guestToken'
+    >,
+    orderId: string,
+    work: (
+      scope: { customerId?: string; guestOrderId?: string },
+      session: ClientSession,
+    ) => Promise<T>,
+  ): Promise<T>
+}
+
+interface PaymentInitiationAccess {
+  owned<T>(
+    credentials: PaymentInitiationCredentials,
+    orderId: string,
+    work: (scopeKeyHash: string, session: ClientSession) => Promise<T>,
+    mutating?: boolean,
+  ): Promise<T>
+}
+
+interface OrderScopeAccess {
+  inSession(
+    credentials: PaymentInitiationCredentials,
+    orderId: string,
+    session: ClientSession,
+    mutating?: boolean,
+  ): Promise<OrderPrincipal>
+  ownedAny<T>(
+    credentials: PaymentInitiationCredentials,
+    work: (principal: OrderPrincipal, session: ClientSession) => Promise<T>,
+  ): Promise<T>
+  owned<T>(
+    credentials: PaymentInitiationCredentials,
+    orderId: string,
+    work: (principal: OrderPrincipal, session: ClientSession) => Promise<T>,
+    mutating?: boolean,
+  ): Promise<T>
+}
+
 export type {
-  AdminAccountAccess,
   AccountView,
-  CustomerProfile,
-  CustomerAccountAccess,
-  CustomerHistories,
-  CustomerAdministration,
+  AdminAccountAccess,
   BrowserRouteAccess,
+  BrowserSecurity,
+  CheckoutAccess,
+  CheckoutCredentials,
+  CheckoutPrincipal,
+  ComplaintThrottle,
+  CustomerAccountAccess,
+  CustomerAdministration,
+  CustomerHistories,
+  CustomerProfile,
+  OrderPrincipal,
+  OrderScopeAccess,
+  PaymentInitiationAccess,
+  PaymentInitiationCredentials,
+  PaymentMethodAccess,
+  SessionCookies,
+  SessionHttp,
 }

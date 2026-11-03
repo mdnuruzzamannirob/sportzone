@@ -24,4 +24,4 @@ const attemptAllocation = z
       value.expiresAt.getTime() === value.heldAt.getTime() + 900000,
   )
 
-export { attemptId, prepareAttemptInput, attemptAllocation }
+export { attemptAllocation, attemptId, prepareAttemptInput }

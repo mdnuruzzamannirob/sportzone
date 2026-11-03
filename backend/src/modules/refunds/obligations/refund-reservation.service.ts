@@ -1,29 +1,30 @@
-import { refundGroupInput as command, refundApproval } from './refund-reservation.schema.js'
-import type {
-  refundRequestOrderAccess,
-  refundOrderSnapshotAccess,
-  refundUnitReservationAccess,
-} from '../../orders/order.service.js'
-import type {
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-} from '../../auth/checkout-access.service.js'
-import { customerRefundRequestInput, customerRefundRequestResult } from './refund-request.schema.js'
-import type { RefundNotifier } from '../payouts/refund-recovery.service.js'
 import { createHash } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
-import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { refundFundingAccess } from '../../payments/payment.service.js'
-import type { refundClaimSnapshotAccess } from '../../returns/return.service.js'
-import { auditOperationReader, createAuditWriter } from '../../audit/audit.service.js'
-import { planMultiSourceMerchandiseRefund } from './refund-allocation.policy.js'
-import { refundModel } from '../refund.model.js'
-import { refundAttemptModel } from '../payouts/refund-attempt.model.js'
-import { verifyCorrectionPersistence } from '../refund.persistence.js'
-import { verifyRefundAttemptPersistence } from '../payouts/refund-attempt.persistence.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import type {
+  AdminAccountAccess,
+  OrderScopeAccess,
+  PaymentInitiationCredentials,
+} from '../../auth/auth.public.js'
+import type {
+  RefundOrderSnapshotAccess,
+  RefundRequestOrderAccess,
+  RefundUnitReservationAccess,
+} from '../../orders/order.public.js'
+import type { RefundFundingAccess } from '../../payments/payment.public.js'
+import type { RefundClaimSnapshotAccess } from '../../returns/return.public.js'
+
+import { refundAttemptModel } from '../payouts/refund-attempt.model.js'
+import { verifyRefundAttemptPersistence } from '../payouts/refund-attempt.persistence.js'
+import { refundModel } from '../refund.model.js'
+import { verifyCorrectionPersistence } from '../refund.persistence.js'
+import type { RefundNotifier } from '../refund.public.js'
+import { planMultiSourceMerchandiseRefund } from './refund-allocation.policy.js'
+import { customerRefundRequestInput, customerRefundRequestResult } from './refund-request.schema.js'
+import { refundGroupInput as command, refundApproval } from './refund-reservation.schema.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 
@@ -51,10 +52,11 @@ type Slice = {
 function createRefundReservationService(
   connection: Connection,
   admins: AdminAccountAccess,
-  claims: ReturnType<typeof refundClaimSnapshotAccess>,
-  order: ReturnType<typeof refundOrderSnapshotAccess>,
-  units: ReturnType<typeof refundUnitReservationAccess>,
-  funding: ReturnType<typeof refundFundingAccess>,
+  claims: RefundClaimSnapshotAccess,
+  order: RefundOrderSnapshotAccess,
+  units: RefundUnitReservationAccess,
+  funding: RefundFundingAccess,
+  auditAccess: AuditAccess,
   policy?: (
     session: ClientSession,
     input: {
@@ -68,8 +70,8 @@ function createRefundReservationService(
   clock: () => Date = () => new Date(),
   notify?: RefundNotifier,
   requests?: {
-    scope: ReturnType<typeof orderScopeAccess>
-    ownedOrder: ReturnType<typeof refundRequestOrderAccess>
+    scope: OrderScopeAccess
+    ownedOrder: RefundRequestOrderAccess
     claimSelection(
       session: ClientSession,
       orderId: string,
@@ -91,8 +93,8 @@ function createRefundReservationService(
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection)
-  const audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+  const audit = auditAccess.write,
+    lookup = auditAccess.lookup
   const view = (rows: InstanceType<typeof refunds>[]) => ({
     refundGroupKey: rows[0]?.refundGroupKey,
     refunds: rows.map((row) => ({

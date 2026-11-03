@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import {
   integerField,
   mutableSchemaOptions,
@@ -50,5 +50,5 @@ function categoryModel(connection: Connection) {
     : connection.model<Category>('Category', categorySchema, 'categories')
 }
 
-export { categoryModel }
 export type { Category }
+export { categoryModel }

@@ -1,8 +1,10 @@
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
-import { lifecycleText } from '../orders/order-lifecycle.schema.js'
-import { bangladeshPhone } from '../customers/customer.schema.js'
-import { orderId } from '../orders/order.schema.js'
+import {
+  bangladeshPhone,
+  singleLineText as lifecycleText,
+  resourceId as orderId,
+} from '../../shared/validation.js'
 
 const complaintInput = z.strictObject({
   issue: lifecycleText,
@@ -45,11 +47,11 @@ const complaintAdminDetail = complaintView.extend({
 })
 
 export {
+  complaintAccepted,
+  complaintAdminDetail,
+  complaintAdminQuery,
   complaintInput,
+  complaintIntakeInput,
   complaintResolution,
   complaintView,
-  complaintIntakeInput,
-  complaintAccepted,
-  complaintAdminQuery,
-  complaintAdminDetail,
 }

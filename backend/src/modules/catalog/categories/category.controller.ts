@@ -2,12 +2,17 @@ import type { RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { respond } from '../../../shared/responses.js'
-import { readSessionCookie } from '../../auth/sessions/session.http.js'
+import type { SessionCookies } from '../../auth/auth.public.js'
+
 import { categoryParams } from './category.schema.js'
 import type { createCategoryAdminService } from './category.service.js'
 
-function createCategoryAdminController(service: ReturnType<typeof createCategoryAdminService>) {
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'admin')
+function createCategoryAdminController(
+  service: ReturnType<typeof createCategoryAdminService>,
+  cookies: SessionCookies,
+) {
+  const token = (req: import('express').Request) =>
+    cookies.readSessionCookie(req.get('Cookie'), 'admin')
   const id = (req: import('express').Request) => parseInput(categoryParams, req.params).categoryId
   const getAdminCategories: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)

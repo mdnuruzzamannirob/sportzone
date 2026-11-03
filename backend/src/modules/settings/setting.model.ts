@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import {
   integerField,
   mutableSchemaOptions,
@@ -104,5 +104,5 @@ function settingsModel(connection: Connection) {
     : connection.model<StoreSettings>('StoreSettings', schema, 'storeSettings')
 }
 
-export { settingsModel }
 export type { StoreSettings }
+export { settingsModel }

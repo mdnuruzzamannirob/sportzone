@@ -1,17 +1,17 @@
-import {
-  emailVerificationInput,
-  emailVerificationConfirmation,
-} from './email-verification.schema.js'
 import { randomBytes } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { Types, type Connection } from 'mongoose'
+import { type Connection, Types } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import type { IdentityNotifications } from '../../notifications/notification.public.js'
 import type { IdentityModels } from '../auth.model.js'
 import type { BrowserSecurity } from '../sessions/browser-security.service.js'
-import { consumeUserChallenge, ChallengeUnavailableError } from '../sessions/session.persistence.js'
+import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
+import {
+  emailVerificationConfirmation,
+  emailVerificationInput,
+} from './email-verification.schema.js'
 import { createProofCodec, proofHash } from './proof.crypto.js'
 
 function createEmailVerificationService(

@@ -1,26 +1,26 @@
-import { verifyDeclaredIndexes } from '../../../shared/database/indexes.js'
-import { Types, type ClientSession, type Connection } from 'mongoose'
-import {
-  id,
-  createInput,
-  patchInput,
-  parse,
-  adminCategory,
-  categoryCreate,
-  categoryPatch,
-  categoryDeactivate,
-  categoryParams,
-  categoryListQuery,
-} from './category.schema.js'
-import { ApiError } from '../../../shared/errors/app-error.js'
-import { inTransaction } from '../../../shared/database/transaction.js'
-import { categoryModel, type Category } from './category.model.js'
 import { createHash, randomUUID } from 'node:crypto'
+import { type ClientSession, type Connection, Types } from 'mongoose'
+import { verifyDeclaredIndexes } from '../../../shared/database/indexes.js'
+import { inTransaction } from '../../../shared/database/transaction.js'
+import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { pageMeta } from '../../../shared/pagination.js'
 import { parseRevision } from '../../../shared/preconditions.js'
 import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { MediaService } from '../../media/media.service.js'
+import type { PublicMediaReferences } from '../../media/media.public.js'
+import { type Category, categoryModel } from './category.model.js'
+import {
+  adminCategory,
+  categoryCreate,
+  categoryDeactivate,
+  categoryListQuery,
+  categoryParams,
+  categoryPatch,
+  createInput,
+  id,
+  parse,
+  patchInput,
+} from './category.schema.js'
 
 function createCategoryService(connection: Connection) {
   const model = categoryModel(connection)
@@ -167,7 +167,7 @@ function createCategoryAdminService(
   connection: Connection,
   access: AdminAccountAccess,
   audit: (session: ClientSession, event: unknown) => Promise<void>,
-  media?: Pick<MediaService, 'changePublicReference'>,
+  media?: Pick<PublicMediaReferences, 'changePublicReference'>,
 ) {
   const model = categoryModel(connection),
     categories = createCategoryService(connection)
@@ -245,7 +245,7 @@ function createCategoryAdminService(
             token,
             current?.image?.publicId,
             image ? { ...image, alt: image.alt || fallback } : null,
-            { targetType: 'category', targetId, slot: 'image' },
+            { targetType: 'category', targetId: targetId.toHexString(), slot: 'image' },
             session,
             mutate,
           )

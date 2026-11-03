@@ -1,8 +1,9 @@
-import { Types, type ClientSession, type Connection } from 'mongoose'
 import { createHash } from 'node:crypto'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import { createAuditWriter } from '../../audit/audit.service.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+
 import { refundModel } from '../refund.model.js'
 import { verifyCorrectionPersistence } from '../refund.persistence.js'
 
@@ -14,9 +15,9 @@ const command = z.strictObject({
   decisionKey: z.string().regex(/^[a-f0-9]{64}$/),
 })
 
-function createCorrectionObligationService(connection: Connection) {
+function createCorrectionObligationService(connection: Connection, auditAccess: AuditAccess) {
   const refunds = refundModel(connection),
-    audit = createAuditWriter(connection)
+    audit = auditAccess.write
   return {
     // Trusted Payments coordinator must bind a verified linked correction source and fence its
     // collection/payment/order in THIS transaction. No HTTP caller may supply this authority.
@@ -101,4 +102,4 @@ function correctionMonitoringAccess(connection: Connection) {
   }
 }
 
-export { createCorrectionObligationService, correctionMonitoringAccess }
+export { correctionMonitoringAccess, createCorrectionObligationService }

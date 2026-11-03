@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
-import { wishlistModel } from './wishlist.model.js'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
+import { wishlistModel } from './wishlist.model.js'
 
 const wishlistValidator = {
   $jsonSchema: {

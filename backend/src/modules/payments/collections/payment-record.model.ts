@@ -1,4 +1,4 @@
-import { Schema, Types, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema, Types } from 'mongoose'
 import {
   integerField,
   mutableSchemaOptions,
@@ -378,4 +378,4 @@ function paymentRecordModels(connection: Connection) {
   }
 }
 
-export { paymentRecordModels, attemptStates, amountDispositions, collectionAmounts }
+export { amountDispositions, attemptStates, collectionAmounts, paymentRecordModels }

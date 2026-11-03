@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import {
+  type DeliveryDeadlineManifest,
   deliveryDeadlineManifest,
   deliveryDeadlineRule,
-  type DeliveryDeadlineManifest,
 } from '../modules/orders/delivery-deadline.schema.js'
 import { jsonDigest } from '../shared/crypto.js'
 import { ConfigurationError } from '../shared/errors/configuration-error.js'

@@ -1,9 +1,10 @@
-import { verifyMediaPersistence } from './media.persistence.js'
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
-import { key, requireTransaction, type MediaContext } from './media.context.js'
 import { createMediaAuthorization } from './access.service.js'
+import { key, type MediaContext, requireTransaction } from './media.context.js'
 import { type MediaAsset, mediaModel } from './media.model.js'
+import { verifyMediaPersistence } from './media.persistence.js'
+import type { PublicMediaReference } from './media.public.js'
 import type { MediaReference } from './media.types.js'
 
 function createMediaAttachments(context: MediaContext) {
@@ -119,7 +120,7 @@ function createMediaAttachments(context: MediaContext) {
       previousPublicId: string | undefined,
       assetId: string | null,
       alt: string,
-      reference: MediaReference,
+      reference: PublicMediaReference,
       session: ClientSession,
       mutateTarget: (
         image: {
@@ -155,7 +156,7 @@ function createMediaAttachments(context: MediaContext) {
         url: string
         alt: string
       } | null,
-      reference: MediaReference,
+      rawReference: PublicMediaReference,
       session: ClientSession,
       mutateTarget: (
         image: {
@@ -166,6 +167,7 @@ function createMediaAttachments(context: MediaContext) {
       ) => Promise<void>,
     ) {
       requireTransaction(session)
+      const reference: MediaReference = { ...rawReference, targetId: key(rawReference.targetId) }
       try {
         await verifyMediaPersistence(context.connection)
       } catch {
@@ -282,4 +284,4 @@ function claimEvidenceMetadataAccess(connection: Connection) {
   }
 }
 
-export { createMediaAttachments, claimEvidenceMetadataAccess }
+export { claimEvidenceMetadataAccess, createMediaAttachments }

@@ -1,20 +1,19 @@
-import { createWishlistController } from './wishlist.controller.js'
 import { Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
+import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
+import { createWishlistController } from './wishlist.controller.js'
+
 import { wishlistParams } from './wishlist.schema.js'
 import type { createWishlistService } from './wishlist.service.js'
 
 function createWishlistRoutes(
   service: ReturnType<typeof createWishlistService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createWishlistController(service)
+  const controller = createWishlistController(service, sessionHttp)
 
   const router = Router()
   for (const path of ['/wishlist', '/wishlist/products/:productId'])
@@ -23,13 +22,14 @@ function createWishlistRoutes(
     '/wishlist',
     security.cors('storefront'),
     security.require('storefront', 'customer'),
-    createSessionHttp(sessions).require('customer'),
+    sessionHttp.require('customer'),
   )
   router.use('/wishlist', (req, _res, next) => {
     parseInput(z.strictObject({}), req.query)
     next()
   })
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'customer')
+  const token = (req: import('express').Request) =>
+    sessionHttp.readSessionCookie(req.get('Cookie'), 'customer')
   router.get('/wishlist', controller.getWishlist)
   for (const method of ['put', 'delete'] as const)
     router[method]('/wishlist/products/:productId', async (req, res) => {

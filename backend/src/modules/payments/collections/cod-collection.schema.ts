@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { lifecycleText } from '../../orders/order-lifecycle.schema.js'
+import { singleLineText as lifecycleText } from '../../../shared/validation.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/),
   money = z.int().positive().max(Number.MAX_SAFE_INTEGER)

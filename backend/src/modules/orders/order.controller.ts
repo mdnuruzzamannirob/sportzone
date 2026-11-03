@@ -1,28 +1,29 @@
-import type { createDeliveryExceptionService } from './delivery-exception.service.js'
-import type { RequestHandler } from 'express'
-import type { Request } from 'express'
+import type { Request, RequestHandler } from 'express'
 import { z } from 'zod'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
-import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
-import type { createCancellationService } from './cancellation.service.js'
-import { orderId } from './order.schema.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import type { createOrderReadService } from './order-read.service.js'
+import { resourceId as orderId } from '../../shared/validation.js'
+import type { SessionCookies } from '../auth/auth.public.js'
+import type { CodCollectionService } from '../payments/payment.public.js'
+
+import type { createCancellationService } from './cancellation.service.js'
+import type { createDeliveryExceptionService } from './delivery-exception.service.js'
+
 import type { createOrderLifecycleService } from './order-lifecycle.service.js'
-import type { createCodCollectionService } from '../payments/collections/cod-collection.service.js'
+import type { createOrderReadService } from './order-read.service.js'
 
 function createCancellationController(
   service: ReturnType<typeof createCancellationService>,
   storefrontOrigin: string,
+  cookies: SessionCookies,
 ) {
   const credentials = (req: Request) => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: readGuestCookie(req.get('Cookie')),
+    customerToken: cookies.readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: cookies.readGuestCookie(req.get('Cookie')),
     csrfToken: req.get('X-CSRF-Token'),
   })
   const params = z.strictObject({ orderId })
@@ -47,7 +48,10 @@ function createCancellationController(
   }
   const getAdminCancellationRequests: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
-    const result = await service.adminList(readSessionCookie(req.get('Cookie'), 'admin'), req.query)
+    const result = await service.adminList(
+      cookies.readSessionCookie(req.get('Cookie'), 'admin'),
+      req.query,
+    )
     respond(res, result.items, 200, result.pagination)
   }
   const postCancellationRequestsDecision: RequestHandler = async (req, res) => {
@@ -56,7 +60,7 @@ function createCancellationController(
     respond(
       res,
       await service.decide(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         id,
         req.body,
         req.get('Idempotency-Key'),
@@ -74,9 +78,10 @@ function createCancellationController(
 function createOrderAdminController(
   reads: Pick<ReturnType<typeof createOrderReadService>, 'adminRead' | 'adminList'>,
   lifecycle: ReturnType<typeof createOrderLifecycleService>,
-  cash: ReturnType<typeof createCodCollectionService>,
+  cash: CodCollectionService,
+  cookies: SessionCookies,
 ) {
-  const token = (cookie: string | undefined) => readSessionCookie(cookie, 'admin')
+  const token = (cookie: string | undefined) => cookies.readSessionCookie(cookie, 'admin')
   const getAdminOrders: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
     const result = await reads.adminList(token(req.get('Cookie')), req.query)
@@ -115,19 +120,20 @@ function createOrderReadController(
     ReturnType<typeof createOrderReadService>,
     'list' | 'read' | 'deliveryEvents' | 'payments'
   >,
+  cookies: SessionCookies,
 ) {
   const credentials = (req: Request) => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: readGuestCookie(req.get('Cookie')),
+    customerToken: cookies.readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: cookies.readGuestCookie(req.get('Cookie')),
   })
   const getOrders: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
     parseInput(z.strictObject({}), req.params)
     const { items, pagination } = await service.list(
-      readSessionCookie(req.get('Cookie'), 'customer'),
+      cookies.readSessionCookie(req.get('Cookie'), 'customer'),
       req.query,
     )
     respond(res, items, 200, pagination)
@@ -153,6 +159,7 @@ function createOrderReadController(
 
 function createDeliveryExceptionController(
   service: ReturnType<typeof createDeliveryExceptionService>,
+  cookies: SessionCookies,
 ) {
   const id = z.string().regex(/^[a-f0-9]{24}$/)
   const list: RequestHandler = async (req, res) => {
@@ -161,7 +168,7 @@ function createDeliveryExceptionController(
     respond(
       res,
       await service.list(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         parseInput(z.strictObject({ orderId: id }), req.params).orderId,
       ),
     )
@@ -171,7 +178,7 @@ function createDeliveryExceptionController(
     respond(
       res,
       await service.create(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         parseInput(z.strictObject({ orderId: id }), req.params).orderId,
         req.body,
         req.get('Idempotency-Key'),
@@ -184,7 +191,7 @@ function createDeliveryExceptionController(
     respond(
       res,
       await service.resolve(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         parseInput(z.strictObject({ exceptionId: id }), req.params).exceptionId,
         req.body,
         req.get('Idempotency-Key'),
@@ -194,5 +201,9 @@ function createDeliveryExceptionController(
   return { list, create, resolve }
 }
 
-export { createCancellationController, createOrderAdminController, createOrderReadController }
-export { createDeliveryExceptionController }
+export {
+  createCancellationController,
+  createDeliveryExceptionController,
+  createOrderAdminController,
+  createOrderReadController,
+}

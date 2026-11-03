@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
-import { cartModel } from './cart.model.js'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
+import { cartModel } from './cart.model.js'
 
 const integer = {
   bsonType: ['int', 'long', 'double'],
@@ -71,4 +71,4 @@ async function verifyCartPersistence(connection: Connection) {
   await verifyDeclaredIndexes(cartModel(connection))
 }
 
-export { initializeCartPersistence, verifyCartPersistence, cartValidator }
+export { cartValidator, initializeCartPersistence, verifyCartPersistence }

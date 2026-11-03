@@ -1,14 +1,16 @@
+import { type ClientSession, Types } from 'mongoose'
 import { z } from 'zod'
-import type { orderNotificationAccess } from '../orders/order-notification.service.js'
-import type { NotificationService } from './notification.service.js'
-import { Types, type ClientSession } from 'mongoose'
-import type { createAuditWriter } from '../audit/audit.service.js'
+import type { AuditWriter } from '../audit/audit.public.js'
+import type { OrderNotificationAccess } from '../orders/order.public.js'
+
 import type { returnNotificationOrderAccess } from '../orders/order.service.js'
-import type { RefundNotifier } from '../refunds/payouts/refund-recovery.service.js'
+
+import type { RefundNotifier } from '../refunds/refund.public.js'
+import type { NotificationService } from './notification.service.js'
 
 const payload = z.object({ operationKey: z.string().regex(/^[a-f0-9]{64}$/), occurredAt: z.date() })
 
-function createOrderMessageService(read: ReturnType<typeof orderNotificationAccess>) {
+function createOrderMessageService(read: OrderNotificationAccess) {
   return {
     async message(claim: NonNullable<Awaited<ReturnType<NotificationService['claim']>>>) {
       if (!claim.orderId) return undefined
@@ -122,7 +124,7 @@ function createPaymentMessageService(verified: (raw: unknown) => Promise<boolean
 function refundDecisionNotifier(
   order: ReturnType<typeof returnNotificationOrderAccess>,
   notifications: Pick<NotificationService, 'enqueueRefund'>,
-  audit: ReturnType<typeof createAuditWriter>,
+  audit: AuditWriter,
 ): RefundNotifier {
   return async (session, input) => {
     const target = await order(session, input.orderId)
@@ -315,8 +317,8 @@ function createReturnMessageService(
 export {
   createOrderMessageService,
   createPaymentMessageService,
-  refundDecisionNotifier,
   createRefundMessageService,
-  returnDecisionNotifier,
   createReturnMessageService,
+  refundDecisionNotifier,
+  returnDecisionNotifier,
 }

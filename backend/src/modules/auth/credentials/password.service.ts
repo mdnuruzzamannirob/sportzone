@@ -59,4 +59,4 @@ async function verifyPassword(password: string, encoded: string | undefined) {
   return timingSafeEqual(expected, actual) && Boolean(match)
 }
 
-export { newPasswordPolicy, hashPassword, verifyPassword }
+export { hashPassword, newPasswordPolicy, verifyPassword }

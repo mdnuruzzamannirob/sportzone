@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import {
   createEncryptionKeyring,
-  type EncryptionKeyring,
   type EncryptedEnvelope,
+  type EncryptionKeyring,
 } from '../../../shared/crypto.js'
 import { ConfigurationError } from '../../../shared/errors/configuration-error.js'
 
@@ -94,5 +94,5 @@ function createProofEncryption(activeVersion: string, keys: Readonly<Record<stri
 
 type ProofEncryption = ReturnType<typeof createProofEncryption>
 
-export { proofPattern, proofHash, createProofCodec, createProofEncryption }
-export type { ProofBinding, ProofEnvelope, ProofEncryption }
+export type { ProofBinding, ProofEncryption, ProofEnvelope }
+export { createProofCodec, createProofEncryption, proofHash, proofPattern }

@@ -1,40 +1,39 @@
-import { type ClientSession, type Connection, Types } from 'mongoose'
-import type { z } from 'zod'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { verifySettingsPersistence } from './setting.persistence.js'
-import { settingsModel } from './setting.model.js'
-import { policyModel } from './policy.model.js'
-import {
-  policyType,
-  paymentChannels,
-  publicHomeSettings,
-  publicContact,
-  settingsPatch,
-  settingsView,
-  publicPolicyLink,
-  policyDraftInput,
-  policyDraftPatch,
-  policyParams,
-  policyListQuery,
-  policyDocument,
-  policySummary,
-  policyApprove,
-  policyPublish,
-  policyKey,
-  policyPublic,
-  policyPublication,
-} from './setting.schema.js'
-import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
-import type { createPublicMediaService } from '../media/access.service.js'
 import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
+import { type ClientSession, type Connection, Types } from 'mongoose'
+import type { z } from 'zod'
+import type { PolicyApproval } from '../../config/settings.js'
+import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
+import { inTransaction } from '../../shared/database/transaction.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import { pageMeta } from '../../shared/pagination.js'
 import { parseRevision } from '../../shared/preconditions.js'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
-import type { MediaService } from '../media/media.service.js'
-import type { PolicyApproval } from '../../config/settings.js'
-import { pageMeta } from '../../shared/pagination.js'
-import { inTransaction } from '../../shared/database/transaction.js'
+import type { PublicMediaReader, PublicMediaReferences } from '../media/media.public.js'
+import { policyModel } from './policy.model.js'
+import { settingsModel } from './setting.model.js'
+import { verifySettingsPersistence } from './setting.persistence.js'
+import {
+  paymentChannels,
+  policyApprove,
+  policyDocument,
+  policyDraftInput,
+  policyDraftPatch,
+  policyKey,
+  policyListQuery,
+  policyParams,
+  policyPublic,
+  policyPublication,
+  policyPublish,
+  policySummary,
+  policyType,
+  publicContact,
+  publicHomeSettings,
+  publicPolicyLink,
+  settingsPatch,
+  settingsView,
+} from './setting.schema.js'
 
 function checkoutSettingsAccess(
   connection: Connection,
@@ -132,7 +131,7 @@ function createSettingService(
   connection: Connection,
   access: AdminAccountAccess,
   audit: (session: ClientSession, event: unknown) => Promise<void>,
-  media?: Pick<MediaService, 'changePublicReference' | 'changePublicAssetReference'>,
+  media?: Pick<PublicMediaReferences, 'changePublicReference' | 'changePublicAssetReference'>,
 ) {
   const model = settingsModel(connection)
   type Row = ReturnType<typeof model.hydrate>
@@ -201,7 +200,7 @@ function createSettingService(
             branding,
             {
               targetType: 'store_settings',
-              targetId: row._id,
+              targetId: row._id.toHexString(),
               slot: 'branding',
             },
             session,
@@ -219,7 +218,7 @@ function createSettingService(
             homepageBanner?.alt ?? '',
             {
               targetType: 'store_settings',
-              targetId: row._id,
+              targetId: row._id.toHexString(),
               slot: 'homepageBanner',
             },
             session,
@@ -256,10 +255,7 @@ function createSettingService(
 }
 
 // Public homepage projection only; settings persistence and approved metadata remain with settings.
-function storefrontSettingsAccess(
-  connection: Connection,
-  images: ReturnType<typeof createPublicMediaService>,
-) {
+function storefrontSettingsAccess(connection: Connection, images: PublicMediaReader) {
   const model = settingsModel(connection)
   return async () => {
     try {
@@ -281,7 +277,7 @@ function storefrontSettingsAccess(
       const ref = row.branding,
         approved = await images([
           {
-            targetId: row._id,
+            targetId: row._id.toHexString(),
             targetType: 'store_settings',
             slot: 'branding',
             publicId: ref.publicId,
@@ -295,10 +291,10 @@ function storefrontSettingsAccess(
       const ref = row.homepageBanner,
         approved = await images([
           {
-            targetId: row._id,
+            targetId: row._id.toHexString(),
             targetType: 'store_settings',
             slot: 'homepageBanner',
-            assetId: ref.assetId,
+            assetId: ref.assetId.toHexString(),
             publicId: ref.image.publicId,
             alt: ref.alt,
           },
@@ -745,13 +741,13 @@ function stockSettingsReader(connection: Connection) {
 
 export {
   checkoutSettingsAccess,
-  paymentChannelSettingsAccess,
-  deliverySettingsGuard,
   createPolicyService,
-  requireSettingsRevision,
   createSettingService,
-  storefrontSettingsAccess,
+  deliverySettingsGuard,
+  paymentChannelSettingsAccess,
   reportThresholdAccess,
+  requireSettingsRevision,
   settingsDigest,
   stockSettingsReader,
+  storefrontSettingsAccess,
 }

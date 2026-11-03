@@ -1,9 +1,9 @@
 import type { RequestHandler } from 'express'
 import { respond } from '../../../shared/responses.js'
 import { readContextCookie } from '../sessions/browser-security.service.js'
-import type { RecoveryService } from './password-recovery.service.js'
 import { createSessionHttp, readSessionCookie } from '../sessions/session.http.js'
 import type { SessionService } from '../sessions/session.service.js'
+import type { RecoveryService } from './password-recovery.service.js'
 
 function createRecoveryController(service: RecoveryService, sessions: SessionService) {
   const cookies = createSessionHttp(sessions)

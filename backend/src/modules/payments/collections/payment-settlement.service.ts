@@ -1,9 +1,11 @@
-import type { Connection, ClientSession } from 'mongoose'
-import { inTransaction, assertOutsideTransaction } from '../../../shared/database/transaction.js'
+import type { ClientSession, Connection } from 'mongoose'
+import { assertOutsideTransaction, inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import { createAuditWriter } from '../../audit/audit.service.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import type { VerifiedAllocationService } from '../../orders/order.public.js'
+
 import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
-import type { createVerifiedAllocationService } from '../../orders/order-allocation.service.js'
+
 import { paymentModel } from '../payment.model.js'
 import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 
@@ -12,11 +14,12 @@ import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 function createPaymentSettlementService(
   connection: Connection,
   orders: ReturnType<typeof verifiedFundingOrderAccess>,
-  allocation: ReturnType<typeof createVerifiedAllocationService>,
+  allocation: VerifiedAllocationService,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   const payments = paymentModel(connection),
-    audit = createAuditWriter(connection, true)
+    audit = auditAccess.replay
   return {
     async recover(paymentId: string, fence?: (session: ClientSession) => Promise<void>) {
       assertOutsideTransaction()

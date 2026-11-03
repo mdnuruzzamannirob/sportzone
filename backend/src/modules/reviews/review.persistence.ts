@@ -85,4 +85,4 @@ async function verifyReviewPersistence(connection: Connection) {
   await verifyDeclaredIndexes(reviewModel(connection))
 }
 
-export { initializeReviewPersistence, verifyReviewPersistence, reviewValidator }
+export { initializeReviewPersistence, reviewValidator, verifyReviewPersistence }

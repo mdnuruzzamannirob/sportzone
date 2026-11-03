@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { healthRoutes } from './health/health.routes.js'
 import type { HealthDependencies } from './health/health.service.js'
 
-export function createApiRouter(
+function createApiRouter(
   health: HealthDependencies = { isReady: async () => false },
   features: readonly Router[] = [],
 ) {
@@ -11,3 +11,5 @@ export function createApiRouter(
   for (const feature of features) router.use(feature)
   return router
 }
+
+export { createApiRouter }

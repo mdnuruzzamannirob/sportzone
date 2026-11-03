@@ -1,8 +1,8 @@
-import { Types, type Connection } from 'mongoose'
+import { type Connection, Types } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import type { CustomerAccountAccess } from '../auth/auth.public.js'
-import type { createCatalogService } from '../catalog/catalog.service.js'
+import type { CatalogSelections } from '../catalog/catalog.public.js'
 import { wishlistModel } from './wishlist.model.js'
 import { verifyWishlistPersistence } from './wishlist.persistence.js'
 import { wishlistParams, wishlistResponse } from './wishlist.schema.js'
@@ -10,7 +10,7 @@ import { wishlistParams, wishlistResponse } from './wishlist.schema.js'
 function createWishlistService(
   connection: Connection,
   access: CustomerAccountAccess,
-  catalog: Pick<ReturnType<typeof createCatalogService>, 'wishlistProducts'>,
+  catalog: Pick<CatalogSelections, 'wishlistProducts'>,
 ) {
   const lists = wishlistModel(connection)
   return {

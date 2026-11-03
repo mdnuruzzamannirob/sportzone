@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import type { Connection } from 'mongoose'
+import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { categoryModel } from './categories/category.model.js'
 import { productModels } from './products/product.model.js'
 import {
@@ -8,7 +9,6 @@ import {
   productCollectionValidators,
   verifyProductPersistence,
 } from './products/product.persistence.js'
-import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 
 const validators: Readonly<Record<string, unknown>> = productCollectionValidators
 
@@ -86,4 +86,4 @@ async function applyCatalogRollout(connection: Connection, expectedDigest: strin
   return inspectCatalogRollout(connection)
 }
 
-export { inspectCatalogRollout, applyCatalogRollout }
+export { applyCatalogRollout, inspectCatalogRollout }

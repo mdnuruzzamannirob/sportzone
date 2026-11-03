@@ -1,8 +1,8 @@
-import type { Connection } from 'mongoose'
-import { createAuthQuotaStore, type QuotaStore } from './auth-throttle.persistence.js'
 import { createHash, createHmac } from 'node:crypto'
 import type { RequestHandler } from 'express'
+import type { Connection } from 'mongoose'
 import { ApiError } from '../../../shared/errors/app-error.js'
+import { createAuthQuotaStore, type QuotaStore } from './auth-throttle.persistence.js'
 
 type Audience = 'customer' | 'admin'
 
@@ -146,4 +146,4 @@ function createPaymentCallbackThrottle(
   }
 }
 
-export { createAuthThrottle, localAuthRateLimit, createPaymentCallbackThrottle }
+export { createAuthThrottle, createPaymentCallbackThrottle, localAuthRateLimit }

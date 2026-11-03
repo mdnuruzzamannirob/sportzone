@@ -1,15 +1,15 @@
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
-import type { createSslcommerzAdapter } from '../../../providers/sslcommerz/sslcommerz.client.js'
 import { assertOutsideTransaction } from '../../../shared/database/transaction.js'
-import { paymentRecordModels } from './payment-record.model.js'
 import { paymentInitiationModel } from '../attempts/payment-initiation.model.js'
-import { paymentModel } from '../payment.model.js'
-import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 import { verifyPaymentInitiationPersistence } from '../attempts/payment-initiation.persistence.js'
+import { paymentModel } from '../payment.model.js'
+import type { PaymentGateway } from '../payment.public.js'
 import type { PaymentCallbackClaim } from './payment-callback.service.js'
+import { paymentRecordModels } from './payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 
-type Gateway = Pick<ReturnType<typeof createSslcommerzAdapter>, 'validate' | 'queryTransaction'>
+type Gateway = Pick<PaymentGateway, 'validate' | 'queryTransaction'>
 
 type Validation = Extract<
   Awaited<ReturnType<Gateway['validate']>>,

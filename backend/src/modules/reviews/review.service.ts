@@ -1,25 +1,26 @@
+import { createHash, randomUUID } from 'node:crypto'
+import { type ClientSession, type Connection, type HydratedDocument, Types } from 'mongoose'
+import { inTransaction } from '../../shared/database/transaction.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { pageMeta, paginationSchema } from '../../shared/pagination.js'
+import type { AdminAccountAccess, CustomerAccountAccess } from '../auth/auth.public.js'
+import type { ProductReviewAccess } from '../catalog/catalog.public.js'
+
+import { type ReviewRecord, reviewModel } from './review.model.js'
+import { verifyReviewPersistence } from './review.persistence.js'
 import {
-  adminReviewView,
-  reviewId,
   reviewAdminQuery as adminQuery,
-  reviewView,
+  adminReviewView,
+  moderationKey,
+  moderationReceipt,
   purchaseProof,
   reviewCreate,
   reviewEdit,
+  reviewId,
   reviewModeration,
-  moderationKey,
-  moderationReceipt,
+  reviewView,
 } from './review.schema.js'
-import { Types, type ClientSession, type Connection, type HydratedDocument } from 'mongoose'
-import type { CustomerAccountAccess, AdminAccountAccess } from '../auth/auth.public.js'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { inTransaction } from '../../shared/database/transaction.js'
-import { reviewModel, type ReviewRecord } from './review.model.js'
-import { verifyReviewPersistence } from './review.persistence.js'
-import { createHash, randomUUID } from 'node:crypto'
-import type { productReviewAccess } from '../catalog/products/product.service.js'
 
 const empty = paginationSchema
 
@@ -147,7 +148,7 @@ type ReviewAudit = {
 
 type Dependencies = {
   accounts: CustomerAccountAccess
-  catalog: ReturnType<typeof productReviewAccess>
+  catalog: ProductReviewAccess
   audit(session: ClientSession, event: ReviewAudit): Promise<void>
   // Trusted owning purchase capability must check delivered eligibility and fence its
   // durable evidence in this session. No adapter means no verified review creation.
@@ -413,5 +414,5 @@ function createReviewService(
   }
 }
 
-export { createReviewQueryService, createReviewService }
 export type { ReviewAudit }
+export { createReviewQueryService, createReviewService }

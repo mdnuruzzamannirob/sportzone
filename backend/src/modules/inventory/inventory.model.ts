@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import {
   integerField,
   mutableSchemaOptions,
@@ -153,5 +153,5 @@ function inventoryReservationModel(connection: Connection) {
       )
 }
 
-export { inventoryMovementModel, inventoryReservationModel }
 export type { InventoryMovement, InventoryReservation }
+export { inventoryMovementModel, inventoryReservationModel }

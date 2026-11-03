@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { mutableSchemaOptions } from '../../shared/database/schema.js'
 
 const schema = new Schema(

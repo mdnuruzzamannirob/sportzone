@@ -78,14 +78,14 @@ const adminReviewView = reviewView.extend({
 })
 
 export {
-  reviewId,
-  reviewCreate,
-  reviewEdit,
-  reviewModeration,
-  purchaseProof,
+  adminReviewView,
   moderationKey,
   moderationReceipt,
+  purchaseProof,
   reviewAdminQuery,
+  reviewCreate,
+  reviewEdit,
+  reviewId,
+  reviewModeration,
   reviewView,
-  adminReviewView,
 }

@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { cancellationModel } from './cancellation.model.js'
 
@@ -123,4 +123,4 @@ async function initializeCancellationPersistence(connection: Connection) {
   await verifyCancellationPersistence(connection)
 }
 
-export { verifyCancellationPersistence, initializeCancellationPersistence, cancellationValidator }
+export { cancellationValidator, initializeCancellationPersistence, verifyCancellationPersistence }

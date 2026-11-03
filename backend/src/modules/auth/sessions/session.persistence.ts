@@ -127,6 +127,6 @@ async function findActiveBrowserContext(
 export {
   ChallengeUnavailableError,
   consumeUserChallenge,
-  findActiveUserSession,
   findActiveBrowserContext,
+  findActiveUserSession,
 }

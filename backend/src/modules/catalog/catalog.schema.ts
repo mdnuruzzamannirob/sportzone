@@ -1,15 +1,9 @@
-import { publicHomeSettings, publicPolicyLink } from '../settings/setting.schema.js'
 import { z } from 'zod'
 import { paginationSchema } from '../../shared/pagination.js'
+import { boundedText as text } from '../../shared/validation.js'
+import { publicHomeSettings, publicPolicyLink } from '../settings/setting.schema.js'
 
 // Existing aggregate inputs remain numeric; HTTP price filters are separately parsed strings.
-const text = (max: number) =>
-  z
-    .string()
-    .trim()
-    .min(1)
-    .refine((value) => [...value].length <= max)
-    .meta({ maxLength: max })
 
 const money = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
 
@@ -125,15 +119,15 @@ const storefrontHome = publicHomeSettings.extend({
 })
 
 export {
-  text,
-  money,
-  productQuery,
+  categoryCard,
   categoryQuery,
   categorySlug,
-  publicImage,
-  categoryCard,
+  money,
   productCard,
-  publicVariant,
   productDetail,
+  productQuery,
+  publicImage,
+  publicVariant,
   storefrontHome,
+  text,
 }

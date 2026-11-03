@@ -1,11 +1,11 @@
-import { createRecoveryController } from './password-recovery.controller.js'
-import { Router, type RequestHandler } from 'express'
+import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { localAuthRateLimit } from '../sessions/auth-throttle.service.js'
-import type { RecoveryService } from './password-recovery.service.js'
+import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import type { SessionService } from '../sessions/session.service.js'
+import { createRecoveryController } from './password-recovery.controller.js'
+import type { RecoveryService } from './password-recovery.service.js'
 
 function createRecoveryRoutes(
   service: RecoveryService,

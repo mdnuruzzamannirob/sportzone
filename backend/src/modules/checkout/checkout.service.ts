@@ -1,55 +1,53 @@
-import { Types, type Connection, type ClientSession } from 'mongoose'
-import {
-  createOrderService,
-  checkoutOrderReadAccess,
-  initialOrderAllocationAccess,
-  expiredOrderAllocationAccess,
-} from '../orders/order.service.js'
-import { createOrderAllocationService } from '../orders/order-allocation.service.js'
-import { createAllocationService } from '../inventory/inventory.service.js'
-import { checkoutPaymentAccess } from '../payments/payment.service.js'
-import { createNotificationService } from '../notifications/notification.service.js'
-import { createAuditWriter } from '../audit/audit.service.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { couponGenerationAccess, type couponQuoteAccess } from '../promotions/promotion.service.js'
+import { createHash } from 'node:crypto'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import type { z } from 'zod'
-import type {
-  CheckoutCredentials,
-  CheckoutPrincipal,
-  checkoutAccess,
-} from '../auth/checkout-access.service.js'
+import { checkoutOptions } from '../../config/checkout.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+import type { CheckoutAccess, CheckoutCredentials, CheckoutPrincipal } from '../auth/auth.public.js'
+import type { CatalogCheckoutAccess } from '../catalog/catalog.public.js'
+import type { CheckoutDeliveryAccess } from '../delivery/delivery.public.js'
+import { createAllocationService } from '../inventory/inventory.service.js'
+import { createNotificationService } from '../notifications/notification.service.js'
+import type { DeliveryDeadlineService } from '../orders/order.public.js'
 import type { orderCreationProof } from '../orders/order.schema.js'
 import {
-  checkoutSubmitInput,
-  type quoteCouponSnapshot,
-  checkoutQuoteInput,
-  normalizedCheckoutDraft,
+  checkoutOrderReadAccess,
+  createOrderService,
+  expiredOrderAllocationAccess,
+  initialOrderAllocationAccess,
+} from '../orders/order.service.js'
+import { createOrderAllocationService } from '../orders/order-allocation.service.js'
+import type { PaymentEligibility } from '../payments/payment.public.js'
+import { checkoutPaymentAccess } from '../payments/payment.service.js'
+import { calculatePricing } from '../promotions/pricing.js'
+import { couponGenerationAccess, type couponQuoteAccess } from '../promotions/promotion.service.js'
+import type { CheckoutSettingsAccess } from '../settings/setting.public.js'
+
+import {
   checkoutCommercialSnapshot,
   checkoutQuote,
+  checkoutQuoteInput,
+  checkoutSubmitInput,
+  normalizedCheckoutDraft,
+  type quoteCouponSnapshot,
 } from './checkout.schema.js'
+import { checkoutCommercialDigest, checkoutDraftFingerprint } from './checkout-consent.policy.js'
+import { checkoutIntentModel } from './checkout-intent.model.js'
+import { verifyCheckoutIntentPersistence } from './checkout-intent.persistence.js'
 import {
   checkoutIntentScope,
   checkoutKeyHash,
-  checkoutSubmissionFingerprint,
   checkoutOrderOutcome,
+  checkoutSubmissionFingerprint,
 } from './checkout-intent.schema.js'
-import { checkoutIntentModel } from './checkout-intent.model.js'
-import { verifyCheckoutIntentPersistence } from './checkout-intent.persistence.js'
 import { checkoutQuoteModel } from './checkout-quote.model.js'
 import { verifyCheckoutQuotePersistence } from './checkout-quote.persistence.js'
-import { checkoutDraftFingerprint, checkoutCommercialDigest } from './checkout-consent.policy.js'
-import { createHash } from 'node:crypto'
-import type { catalogCheckoutAccess } from '../catalog/catalog.service.js'
-import type { CheckoutDeliveryAccess } from '../delivery/delivery.public.js'
-import type { checkoutSettingsAccess } from '../settings/setting.service.js'
-import type { createDeliveryDeadlineService } from '../orders/delivery-deadline.service.js'
-import type { paymentEligibility } from '../payments/attempts/payment-eligibility.service.js'
-import { calculatePricing } from '../promotions/pricing.js'
-import { checkoutOptions } from '../../config/checkout.js'
 
 function createCheckoutCompletionService(
   connection: Connection,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ): CheckoutCompletion {
   const payments = checkoutPaymentAccess(connection),
@@ -75,7 +73,7 @@ function createCheckoutCompletionService(
             return proof
           },
         },
-        createAuditWriter(connection),
+        auditAccess.write,
         clock,
       ).create(session, {
         orderId: proof.orderId,
@@ -112,10 +110,14 @@ function createCheckoutCompletionService(
   }
 }
 
-function createCheckoutExpiryService(connection: Connection, clock: () => Date = () => new Date()) {
+function createCheckoutExpiryService(
+  connection: Connection,
+  auditAccess: AuditAccess,
+  clock: () => Date = () => new Date(),
+) {
   const stock = createAllocationService(connection, undefined, clock),
     coupon = couponGenerationAccess(connection),
-    audit = createAuditWriter(connection)
+    audit = auditAccess.write
   return {
     due: stock.due,
     async expire(session: ClientSession, orderId: string, generation: number) {
@@ -203,7 +205,7 @@ type CheckoutCompletion = {
 
 function createCheckoutIntentService(
   connection: Connection,
-  access: ReturnType<typeof checkoutAccess>,
+  access: CheckoutAccess,
   quotes: Pick<ReturnType<typeof createCheckoutQuoteService>, 'revalidate'>,
   completion: CheckoutCompletion,
   clock: () => Date = () => new Date(),
@@ -357,14 +359,14 @@ type Draft = z.output<typeof checkoutQuoteInput>
 
 function createCheckoutQuoteService(
   connection: Connection,
-  access: ReturnType<typeof checkoutAccess>,
+  access: CheckoutAccess,
   dependencies: {
-    catalog: ReturnType<typeof catalogCheckoutAccess>
+    catalog: CatalogCheckoutAccess
     delivery: CheckoutDeliveryAccess
-    settings: ReturnType<typeof checkoutSettingsAccess>
-    deadline: ReturnType<typeof createDeliveryDeadlineService>
+    settings: CheckoutSettingsAccess
+    deadline: DeliveryDeadlineService
     coupon: ReturnType<typeof couponQuoteAccess>
-    methods: ReturnType<typeof paymentEligibility>
+    methods: PaymentEligibility
   },
   rawOptions: unknown,
   clock: () => Date = () => new Date(),
@@ -619,6 +621,7 @@ function orderPolicySnapshotAccess(connection: Connection) {
   }
 }
 
+export type { CheckoutCompletion }
 export {
   createCheckoutCompletionService,
   createCheckoutExpiryService,
@@ -626,4 +629,3 @@ export {
   createCheckoutQuoteService,
   orderPolicySnapshotAccess,
 }
-export type { CheckoutCompletion }

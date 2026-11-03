@@ -22,4 +22,4 @@ type CheckoutDeliveryAccess = (
 
 type DeliveryAreasAccess = (query: unknown) => Promise<z.output<typeof deliveryAreas>>
 
-export type { AddressCoverage, DeliveryChargeSnapshot, CheckoutDeliveryAccess, DeliveryAreasAccess }
+export type { AddressCoverage, CheckoutDeliveryAccess, DeliveryAreasAccess, DeliveryChargeSnapshot }

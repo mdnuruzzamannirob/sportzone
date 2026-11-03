@@ -1,11 +1,11 @@
 import { Types } from 'mongoose'
-import { ApiError } from '../../shared/errors/app-error.js'
 import { assertOutsideTransaction, inTransaction } from '../../shared/database/transaction.js'
-import { key, type MediaContext } from './media.context.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { createMediaAuthorization } from './access.service.js'
+import { key, type MediaContext } from './media.context.js'
 import type { MediaAsset } from './media.model.js'
-import type { EvidenceScope, MediaFile, MediaLookup, MediaScanner } from './media.types.js'
 import { inspectFile } from './media.schema.js'
+import type { EvidenceScope, MediaFile, MediaLookup, MediaScanner } from './media.types.js'
 
 function createMediaUploads(context: MediaContext) {
   const { connection, model, access, scanner, provider, policy, clock } = context

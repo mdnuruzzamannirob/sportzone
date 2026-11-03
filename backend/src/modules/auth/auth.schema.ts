@@ -273,5 +273,5 @@ function isChallengeCurrent(
   )
 }
 
-export { challengePurpose, createIdentityContracts, parseIdentityResponse, isChallengeCurrent }
 export type { ChallengePurpose }
+export { challengePurpose, createIdentityContracts, isChallengeCurrent, parseIdentityResponse }

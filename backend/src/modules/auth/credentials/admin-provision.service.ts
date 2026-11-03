@@ -1,9 +1,9 @@
-import { Types, type Connection } from 'mongoose'
+import { type Connection, Types } from 'mongoose'
 import { inTransaction } from '../../../shared/database/transaction.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import { registrationInput } from './credential.service.js'
+import { parseInput } from '../../../shared/middleware/validate.js'
 import type { IdentityModels } from '../auth.model.js'
+import { registrationInput } from './credential.service.js'
 import { hashPassword } from './password.service.js'
 
 // Reserved bootstrap identity, not a secret or a selectable public registration field.

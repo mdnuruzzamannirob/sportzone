@@ -30,4 +30,4 @@ function accountDto(user: User) {
   }
 }
 
-export { addressDto, accountDto }
+export { accountDto, addressDto }

@@ -1,7 +1,7 @@
-import type { SecurityAction } from './security-actions.js'
 import { randomUUID } from 'node:crypto'
 import type { ErrorCode } from './errors/app-error.js'
 import { DatabaseError } from './errors/database-error.js'
+import type { SecurityAction } from './security-actions.js'
 
 type LifecycleEvent =
   | 'starting'
@@ -24,7 +24,7 @@ type RequestEvent = {
   errorCode?: ErrorCode
 }
 const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])
-export function createLogger(
+function createLogger(
   config: { APP_ENV: 'local' | 'test' | 'staging' | 'production'; RELEASE_ID: string },
   sink: (line: string) => void = (line) => {
     process.stdout.write(`${line}\n`)
@@ -94,8 +94,8 @@ export function createLogger(
     },
   }
 }
-export type Logger = ReturnType<typeof createLogger>
-export function logConfigurationFailure(
+type Logger = ReturnType<typeof createLogger>
+function logConfigurationFailure(
   fields: readonly string[],
   sink: (line: string) => void = (line) => {
     process.stderr.write(`${line}\n`)
@@ -116,3 +116,6 @@ export function logConfigurationFailure(
     }),
   )
 }
+
+export type { Logger }
+export { createLogger, logConfigurationFailure }

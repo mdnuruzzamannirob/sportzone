@@ -45,4 +45,4 @@ const pricingInput = pricingRequest.safeExtend({
     .max(40),
 })
 
-export { couponTerms, pricingRequest, pricingInput }
+export { couponTerms, pricingInput, pricingRequest }

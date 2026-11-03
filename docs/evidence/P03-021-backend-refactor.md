@@ -878,3 +878,52 @@ actual tests/contracts/operator scripts/tools and aliases. Consolidated function
 concurrency testing, review and fixes follow. Keep final package exits and P03-022 acceptance pending.
 The module structural pass is complete; P03-030 remains In Progress for this staged integration and
 verification sequence. Historical task/feature acceptance is preserved, not used to certify these moves.
+
+
+### Remaining-src architecture work — ongoing, 3 November 2026
+
+Owner requested the full src pass next, keeping tests/test review and outside-src migration deferred.
+This record describes applied work, not completion of the full source architecture or P03-030.
+
+- Moved environment/provider assembly from server.ts to the existing setup.ts composition root.
+  Server retains database/listener/readiness/shutdown lifecycle; routes.ts retains prepared-router registration.
+- Replaced foreign HTTP imports of private auth cookie/security/session implementations with injected
+  type-only SessionCookies, SessionHttp and browser/throttle capabilities. Cookie minting remains private.
+  Checkout/order credentials, principals and generic ownership operations now have independent auth contracts.
+- Injected audit write, replay-safe write and operation lookup from root assembly. Preserved the two
+  writer modes and moved required capabilities before optional policy/clock arguments. Updated source
+  constructor callers and indexed Parameters types; outside-src constructor callers still need migration.
+- Added independent capability contracts for existing DTO/string-ID projections in catalog, inventory,
+  orders, payments, returns, settings, checkout, media and refunds. Contracts do not derive from service
+  implementations or expose models/connections/ObjectId. Consolidated repeated payment funding summary types.
+- Separated gateway, media/scanner and email provider protocols from concrete client/private type files.
+  Public media references use string IDs, converted inside media before private attachment operations.
+- Jobs consume narrow domain capabilities. Reservation expiry now requires an injected expiry capability;
+  media maintenance obtains persistence verification through its owner. Payment scheduling options have
+  one definition in config/payments.ts, with the historical owner export retained for deferred consumers.
+- Extracted actually reused ID/idempotency/text/phone parsing into shared/validation.ts, preserving
+  their original expressions and normalization. Business stock/coupon/channel/policy validation remains owned.
+- Applied explicit bottom named-export lists and existing source formatting across config/providers/jobs/
+  shared/root as well as modules. No package, collection, test suite or tracked architecture guide was added.
+
+| Check | Observed result |
+| --- | --- |
+| `node_modules/.bin/tsc --project backend/tsconfig.json --noEmit` | Passed; src only |
+| `node_modules/.bin/biome lint backend/src --error-on-warnings` | Passed; 308 files |
+| `node_modules/.bin/biome format backend/src` | Passed; 308 files |
+| Static runtime import graph | Acyclic; not functional/concurrency verification |
+| `npm run lint:boundaries` | Failed: 325 errors, comprising 47 source dependency violations and 278 stale exact allowances; 14 existing exact allowances remain active |
+| Tests, test review, workspace build/contracts/operator/provider checks | Not Run, deferred by owner |
+| Git commit/push/branch/PR mutations | Not performed |
+
+Local ignored [src inventory, changed constructor signatures and remaining violations](../../test-results/backend-refactor/src-folder-batch.json)
+records 283 changed and nine added source files relative to this pass's pre-edit snapshot. Existing
+staged changes were retained; the index was not intentionally modified by the agent.
+
+**Not complete:** Remaining source work includes cross-module schema coupling, private financial/media
+capabilities and runtime construction between checkout/orders/payments/refunds/notifications. The 47
+reported source edges and 14 active legacy allowances must be assessed and resolved under the approved
+boundaries, rather than replaced with broad new allowances. Outside-src scripts/tests/contracts must
+then adopt changed imports and dependency arguments; the current source-only pass does not certify
+those consumers. Boundary inventory migration, consolidated behavior/security/financial/concurrency
+verification and final review remain pending. P03-030 stays In Progress; P03-022 remains unaccepted.

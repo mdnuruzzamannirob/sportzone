@@ -1,8 +1,8 @@
-import { createCatalogController } from './catalog.controller.js'
-import { Router, type RequestHandler } from 'express'
+import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
-import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { createCatalogController } from './catalog.controller.js'
 import type { createCatalogService } from './catalog.service.js'
 
 function createCatalogRoutes(

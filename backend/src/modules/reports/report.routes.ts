@@ -1,21 +1,19 @@
-import { createReportController } from './report.controller.js'
 import { Router } from 'express'
-import type { createReportService, createOperationalQueueService } from './report.service.js'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
+import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
+import { createReportController } from './report.controller.js'
+import type { createOperationalQueueService, createReportService } from './report.service.js'
 
 function createReportRoutes(
   service: ReturnType<typeof createReportService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
   queues: ReturnType<typeof createOperationalQueueService>,
 ) {
-  const controller = createReportController(service, queues)
+  const controller = createReportController(service, queues, sessionHttp)
 
   const router = Router(),
     cors = security.cors('admin'),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
   for (const kind of ['dashboard', 'sales', 'collections', 'refunds'] as const) {
     const path = kind === 'dashboard' ? '/admin/dashboard' : `/admin/reports/${kind}`
     router.options(path, cors)

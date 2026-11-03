@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import {
   integerField,
   mutableSchemaOptions,
@@ -120,5 +120,5 @@ function mediaModel(connection: Connection) {
     : connection.model<MediaAsset>('MediaAsset', schema, 'mediaAssets')
 }
 
-export { mediaModel }
 export type { MediaAsset }
+export { mediaModel }

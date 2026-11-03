@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import type { createSslcommerzAdapter } from '../../../providers/sslcommerz/sslcommerz.client.js'
 import { assertOutsideTransaction } from '../../../shared/database/transaction.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
+import type { PaymentGateway } from '../../payments/payment.public.js'
 
 const ref = (max: number) =>
   z
@@ -21,9 +21,7 @@ const input = z.strictObject({
 
 // Read-only classification. The provider status API has no amount, and provider timestamp zone is
 // unqualified. Even a refunded report requires later durable identity/amount/time verification.
-function createRefundInvestigationService(
-  provider: Pick<ReturnType<typeof createSslcommerzAdapter>, 'queryRefund'>,
-) {
+function createRefundInvestigationService(provider: Pick<PaymentGateway, 'queryRefund'>) {
   return async (raw: unknown) => {
     assertOutsideTransaction()
     const expected = parseInput(input, raw)
@@ -114,4 +112,4 @@ function assessRefundRetry(raw: unknown) {
   }
 }
 
-export { createRefundInvestigationService, assessRefundRetry }
+export { assessRefundRetry, createRefundInvestigationService }

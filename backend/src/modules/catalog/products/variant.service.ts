@@ -1,7 +1,7 @@
-import { verifyProductPersistence } from './product.persistence.js'
 import type { ClientSession, Connection, Types } from 'mongoose'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { productModels } from './product.model.js'
+import { verifyProductPersistence } from './product.persistence.js'
 
 type StockCounters = {
   physical: number
@@ -205,5 +205,5 @@ function variantInventoryAccess(connection: Connection) {
   }
 }
 
-export { variantStockAccess, variantInventoryAccess }
 export type { StockCounters }
+export { variantInventoryAccess, variantStockAccess }

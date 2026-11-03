@@ -1,32 +1,31 @@
-import { createDeliveryExceptionController } from './order.controller.js'
+import { Router } from 'express'
+import type { BrowserSecurity, SessionCookies, SessionHttp } from '../auth/auth.public.js'
+import type { CodCollectionService } from '../payments/payment.public.js'
+
+import type { createCancellationService } from './cancellation.service.js'
 import type { createDeliveryExceptionService } from './delivery-exception.service.js'
 import {
   createCancellationController,
+  createDeliveryExceptionController,
   createOrderAdminController,
   createOrderReadController,
 } from './order.controller.js'
-import { Router } from 'express'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
-import type { createCancellationService } from './cancellation.service.js'
-import type { createOrderReadService } from './order-read.service.js'
 import type { createOrderLifecycleService } from './order-lifecycle.service.js'
-import type { createCodCollectionService } from '../payments/collections/cod-collection.service.js'
+import type { createOrderReadService } from './order-read.service.js'
 
 // Explicit local assembly only; all ownership/state/funding decisions stay in Orders services.
 function createCancellationRoutes(
   service: ReturnType<typeof createCancellationService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
   storefrontOrigin: string,
 ) {
-  const controller = createCancellationController(service, storefrontOrigin)
+  const controller = createCancellationController(service, storefrontOrigin, sessionHttp)
 
   const router = Router(),
     customerCors = security.cors('storefront'),
     adminCors = security.cors('admin'),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
 
   router.options('/orders/:orderId/cancellation-requests', customerCors)
   router.get(
@@ -60,15 +59,15 @@ function createCancellationRoutes(
 function createOrderAdminRoutes(
   reads: Pick<ReturnType<typeof createOrderReadService>, 'adminRead' | 'adminList'>,
   lifecycle: ReturnType<typeof createOrderLifecycleService>,
-  cash: ReturnType<typeof createCodCollectionService>,
+  cash: CodCollectionService,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createOrderAdminController(reads, lifecycle, cash)
+  const controller = createOrderAdminController(reads, lifecycle, cash, sessionHttp)
 
   const router = Router(),
     cors = security.cors('admin'),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
 
   for (const path of [
     '/admin/orders',
@@ -102,8 +101,9 @@ function createOrderReadRoutes(
     'list' | 'read' | 'deliveryEvents' | 'payments'
   >,
   security: BrowserSecurity,
+  cookies: SessionCookies,
 ) {
-  const controller = createOrderReadController(service)
+  const controller = createOrderReadController(service, cookies)
 
   const router = Router(),
     cors = security.cors('storefront')
@@ -133,12 +133,12 @@ function createOrderReadRoutes(
 function createDeliveryExceptionRoutes(
   service: ReturnType<typeof createDeliveryExceptionService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
   const router = Router(),
     cors = security.cors('admin'),
-    http = createSessionHttp(sessions),
-    controller = createDeliveryExceptionController(service)
+    http = sessionHttp,
+    controller = createDeliveryExceptionController(service, sessionHttp)
   for (const path of [
     '/admin/orders/:orderId/delivery-exceptions',
     '/admin/delivery-exceptions/:exceptionId/resolve',
@@ -167,5 +167,9 @@ function createDeliveryExceptionRoutes(
   return router
 }
 
-export { createCancellationRoutes, createOrderAdminRoutes, createOrderReadRoutes }
-export { createDeliveryExceptionRoutes }
+export {
+  createCancellationRoutes,
+  createDeliveryExceptionRoutes,
+  createOrderAdminRoutes,
+  createOrderReadRoutes,
+}

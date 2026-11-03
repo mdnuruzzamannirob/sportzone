@@ -1,15 +1,17 @@
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
-import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
-import type { createPaymentSettlementService } from './payment-settlement.service.js'
-import { createAuditWriter, auditOperationReader } from '../../audit/audit.service.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
+import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+
+import type { AdminAccountAccess } from '../../auth/auth.public.js'
+import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
+
 import { paymentModel } from '../payment.model.js'
 import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
-import { paymentInitiationKey } from '../attempts/payment-initiation.schema.js'
-import { paymentRiskParams, paymentRiskInput, paymentRiskResult } from './payment-risk.schema.js'
+import { paymentRiskInput, paymentRiskParams, paymentRiskResult } from './payment-risk.schema.js'
+import type { createPaymentSettlementService } from './payment-settlement.service.js'
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 
@@ -18,11 +20,12 @@ function createPaymentRiskService(
   access: AdminAccountAccess,
   orders: ReturnType<typeof verifiedFundingOrderAccess>,
   settlement: ReturnType<typeof createPaymentSettlementService>,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   const payments = paymentModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   return {
     async decide(token: string | undefined, paymentId: string, raw: unknown, key: unknown) {
       parseInput(paymentRiskParams, { paymentId })

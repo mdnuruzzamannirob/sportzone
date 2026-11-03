@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { returnModel } from './return.model.js'
 
@@ -441,11 +441,11 @@ async function upgradeReturnLifecyclePersistence(connection: Connection) {
 }
 
 export {
-  verifyReturnPersistence,
-  initializeReturnPersistence,
-  upgradeReturnLifecyclePersistence,
   foundationReturnValidator,
+  initializeReturnPersistence,
+  returnValidator,
   reviewReturnValidator,
   singleReceiptReturnValidator,
-  returnValidator,
+  upgradeReturnLifecyclePersistence,
+  verifyReturnPersistence,
 }

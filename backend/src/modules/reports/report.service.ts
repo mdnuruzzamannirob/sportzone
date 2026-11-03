@@ -1,21 +1,22 @@
-import {
-  reportViews,
-  operationalItem,
-  reportQuery as query,
-  operationalQuery,
-} from './report.schema.js'
 import type { ClientSession } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/auth.public.js'
-import type { orderReportAccess } from '../orders/order.service.js'
-import type {
-  paymentReportAccess,
-  customerPaymentSummaryAccess,
-} from '../payments/payment.service.js'
-import type { refundReportAccess } from '../refunds/refund-history.service.js'
-import type { catalogReportAccess } from '../catalog/products/product.service.js'
-import { calculateFinancialReport } from './report-calculation.js'
-import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
+import type { CatalogReportAccess } from '../catalog/catalog.public.js'
+import type { OrderReportAccess } from '../orders/order.public.js'
+import type {
+  CustomerPaymentSummaryAccess,
+  PaymentReportAccess,
+} from '../payments/payment.public.js'
+import type { RefundReportAccess } from '../refunds/refund.public.js'
+
+import {
+  operationalItem,
+  operationalQuery,
+  reportQuery as query,
+  reportViews,
+} from './report.schema.js'
+import { calculateFinancialReport } from './report-calculation.js'
 
 const date = (s: string) => new Date(s.length === 10 ? `${s}T00:00:00+06:00` : s)
 
@@ -27,11 +28,11 @@ const safeMoney = (n: number) => {
 function createReportService(
   admins: AdminAccountAccess,
   deps: {
-    paymentSummary: ReturnType<typeof customerPaymentSummaryAccess>
-    orders: ReturnType<typeof orderReportAccess>
-    payments: ReturnType<typeof paymentReportAccess>
-    refunds: ReturnType<typeof refundReportAccess>
-    catalog: ReturnType<typeof catalogReportAccess>
+    paymentSummary: CustomerPaymentSummaryAccess
+    orders: OrderReportAccess
+    payments: PaymentReportAccess
+    refunds: RefundReportAccess
+    catalog: CatalogReportAccess
     threshold(session: ClientSession): Promise<number>
     customers(session: ClientSession): Promise<number>
     pendingReturns(session: ClientSession): Promise<number>
@@ -225,4 +226,4 @@ function createOperationalQueueService(
   }
 }
 
-export { createReportService, createOperationalQueueService }
+export { createOperationalQueueService, createReportService }

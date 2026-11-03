@@ -1,37 +1,35 @@
-import { Router, type Request, type RequestHandler } from 'express'
+import { type Request, type RequestHandler, Router } from 'express'
 import { z } from 'zod'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
+import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
+import { claimEvidenceMultipart } from '../media/media.controller.js'
+import { claimCompleteInput, claimId, claimInspectionInput } from './return.schema.js'
 import type {
   createReturnHistoryService,
   createReturnLifecycleService,
   createReturnOperationsService,
   createReturnPhysicalService,
 } from './return.service.js'
-import { claimId, claimInspectionInput, claimCompleteInput } from './return.schema.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { claimEvidenceMultipart } from '../media/media.controller.js'
 
 // Shared current-session reads; root composition owns environment admission.
 function createReturnHistoryRoutes(
   service: ReturnType<typeof createReturnHistoryService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
   const router = Router(),
     cors = security.cors('storefront'),
     adminCors = security.cors('admin'),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
   const credentials = (req: Request) => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: readGuestCookie(req.get('Cookie')),
+    customerToken: sessionHttp.readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: sessionHttp.readGuestCookie(req.get('Cookie')),
   })
   for (const path of ['/me/claims', '/orders/:orderId/claims', '/claims/:claimId'])
     router.options(path, cors)
@@ -43,7 +41,10 @@ function createReturnHistoryRoutes(
   })
   router.get('/admin/claims', adminCors, http.require('admin'), async (req, res) => {
     parseInput(z.undefined(), req.body)
-    const result = await service.adminList(readSessionCookie(req.get('Cookie'), 'admin'), req.query)
+    const result = await service.adminList(
+      sessionHttp.readSessionCookie(req.get('Cookie'), 'admin'),
+      req.query,
+    )
     respond(res, result.items, 200, result.pagination)
   })
   router.get('/admin/claims/:claimId', adminCors, http.require('admin'), async (req, res) => {
@@ -52,7 +53,7 @@ function createReturnHistoryRoutes(
     respond(
       res,
       await service.adminDetail(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        sessionHttp.readSessionCookie(req.get('Cookie'), 'admin'),
         parseInput(z.strictObject({ claimId }), req.params).claimId,
       ),
     )
@@ -88,7 +89,7 @@ function createReturnRoutes(
   physical: ReturnType<typeof createReturnPhysicalService>,
   history: ReturnType<typeof createReturnHistoryService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
   storefrontOrigin: string,
   maxBytes: number,
   uploadThrottle: RequestHandler,
@@ -103,13 +104,13 @@ function createReturnRoutes(
   const router = Router(),
     customer = security.cors('storefront'),
     admin = security.cors('admin'),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
   const credentials = (req: Request) => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: readGuestCookie(req.get('Cookie')),
+    customerToken: sessionHttp.readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: sessionHttp.readGuestCookie(req.get('Cookie')),
     csrfToken: req.get('X-CSRF-Token'),
   })
   const emptyQuery = (req: Request) => parseInput(z.strictObject({}), req.query)
@@ -168,7 +169,7 @@ function createReturnRoutes(
     '/admin/claims/:claimId/evidence/:assetId',
   ])
     router.options(path, admin)
-  const actor = (req: Request) => readSessionCookie(req.get('Cookie'), 'admin')
+  const actor = (req: Request) => sessionHttp.readSessionCookie(req.get('Cookie'), 'admin')
   router.post(
     '/admin/claims/:claimId/review',
     admin,

@@ -24,4 +24,4 @@ const loginInput = z.strictObject({
     .refine((s) => Buffer.byteLength(s) <= 4096 && !/[\uD800-\uDFFF]/u.test(s)),
 })
 
-export { registrationInput, loginInput }
+export { loginInput, registrationInput }

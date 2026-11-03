@@ -1,38 +1,38 @@
 import { randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
-import { Types, type ClientSession, type Connection } from 'mongoose'
-import { ApiError } from '../../shared/errors/app-error.js'
+import { type ClientSession, type Connection, Types } from 'mongoose'
+import { jsonDigest as digest } from '../../shared/crypto.js'
 import { inTransaction } from '../../shared/database/transaction.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
 import { parseRevision } from '../../shared/preconditions.js'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
-import { jsonDigest as digest } from '../../shared/crypto.js'
 import { deliveryModels } from './delivery.model.js'
 import { verifyDeliveryPersistence } from './delivery.persistence.js'
-import {
-  zoneInput,
-  zonePatch,
-  zoneView,
-  zoneQuery,
-  zoneParams,
-  chargeInput,
-  chargeView,
-  chargeQuery,
-  chargeParams,
-  chargeActivate,
-  chargeDeactivate,
-  chargeSupersede,
-  chargeReplacement,
-  deliveryOperationKey,
-  deliveryAreasQuery,
-  deliveryAreas,
-} from './delivery.schema.js'
 import type {
   AddressCoverage,
   CheckoutDeliveryAccess,
   DeliveryAreasAccess,
 } from './delivery.public.js'
+import {
+  chargeActivate,
+  chargeDeactivate,
+  chargeInput,
+  chargeParams,
+  chargeQuery,
+  chargeReplacement,
+  chargeSupersede,
+  chargeView,
+  deliveryAreas,
+  deliveryAreasQuery,
+  deliveryOperationKey,
+  zoneInput,
+  zoneParams,
+  zonePatch,
+  zoneQuery,
+  zoneView,
+} from './delivery.schema.js'
 
 function parseTransitionInput(action: 'activate' | 'deactivate' | 'supersede', raw: unknown) {
   if (action === 'activate') return parseInput(chargeActivate, raw)
@@ -619,5 +619,5 @@ function deliveryAreasAccess(
   }
 }
 
-export { createDeliveryService, createAddressCoverage, checkoutDeliveryAccess, deliveryAreasAccess }
-export type { DeliveryService, AddressCoverage }
+export type { AddressCoverage, DeliveryService }
+export { checkoutDeliveryAccess, createAddressCoverage, createDeliveryService, deliveryAreasAccess }

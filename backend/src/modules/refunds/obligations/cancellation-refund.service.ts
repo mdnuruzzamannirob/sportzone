@@ -1,22 +1,23 @@
-import type { RefundNotifier } from '../payouts/refund-recovery.service.js'
 import { createHash } from 'node:crypto'
-import { Types, type Connection, type ClientSession } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
-import type {
-  cancellationRefundSnapshotAccess,
-  refundUnitReservationAccess,
-} from '../../orders/order.service.js'
-import type { refundFundingAccess } from '../../payments/payment.service.js'
-import { createAuditWriter } from '../../audit/audit.service.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import { refundModel } from '../refund.model.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import type {
+  CancellationRefundSnapshotAccess,
+  RefundUnitReservationAccess,
+} from '../../orders/order.public.js'
+import type { RefundFundingAccess } from '../../payments/payment.public.js'
+
 import { refundAttemptModel } from '../payouts/refund-attempt.model.js'
-import { verifyCorrectionPersistence } from '../refund.persistence.js'
 import { verifyRefundAttemptPersistence } from '../payouts/refund-attempt.persistence.js'
+import { refundModel } from '../refund.model.js'
+import { verifyCorrectionPersistence } from '../refund.persistence.js'
+import type { RefundNotifier } from '../refund.public.js'
 import { planMultiSourceMerchandiseRefund } from './refund-allocation.policy.js'
-import type { createRefundReservationService } from './refund-reservation.service.js'
 import { refundApproval } from './refund-reservation.schema.js'
+import type { createRefundReservationService } from './refund-reservation.service.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 
@@ -33,17 +34,18 @@ const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 // Capability handed only to the current Orders cancellation-decision transaction, never HTTP.
 function createCancellationRefundService(
   connection: Connection,
-  snapshot: ReturnType<typeof cancellationRefundSnapshotAccess>,
-  units: ReturnType<typeof refundUnitReservationAccess>,
-  funding: ReturnType<typeof refundFundingAccess>,
-  policy?: Parameters<typeof createRefundReservationService>[6],
+  snapshot: CancellationRefundSnapshotAccess,
+  units: RefundUnitReservationAccess,
+  funding: RefundFundingAccess,
+  auditAccess: AuditAccess,
+  policy?: Parameters<typeof createRefundReservationService>[7],
   clock: () => Date = () => new Date(),
   notify?: RefundNotifier,
   basis: 'cancellation' | 'delivery_exception' = 'cancellation',
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection),
-    audit = createAuditWriter(connection)
+    audit = auditAccess.write
   return async (session: ClientSession, raw: unknown) => {
     if (!session.inTransaction()) throw new ApiError('STATE_CONFLICT')
     const input = parseInput(command, raw)

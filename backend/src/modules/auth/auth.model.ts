@@ -1,4 +1,4 @@
-import { Schema, Types, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema, Types } from 'mongoose'
 import { z } from 'zod'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
@@ -311,5 +311,5 @@ function createIdentityModels(connection: Connection) {
 
 type IdentityModels = ReturnType<typeof createIdentityModels>
 
-export { createIdentityModels }
 export type { IdentityModels }
+export { createIdentityModels }

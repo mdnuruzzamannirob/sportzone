@@ -64,12 +64,12 @@ const paymentChannelApproval = z
 
 type PaymentChannelApproval = z.infer<typeof paymentChannelApproval>
 
+export type { PaymentChannelApproval }
 export {
   paymentChannel,
+  paymentChannelApproval,
   paymentMethodEligibility,
-  verifiedChannelCapability,
   paymentMethodsQuery,
   paymentMethodsView,
-  paymentChannelApproval,
+  verifiedChannelCapability,
 }
-export type { PaymentChannelApproval }

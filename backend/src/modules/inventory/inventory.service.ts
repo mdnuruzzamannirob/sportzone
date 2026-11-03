@@ -1,36 +1,36 @@
-import { Types, type ClientSession, type Connection, type HydratedDocument } from 'mongoose'
+import { createHash } from 'node:crypto'
+import { type ClientSession, type Connection, type HydratedDocument, Types } from 'mongoose'
 import { z } from 'zod'
+import { inTransaction } from '../../shared/database/transaction.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { pageMeta } from '../../shared/pagination.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
 import {
-  variantStockAccess,
   type variantInventoryAccess,
+  variantStockAccess,
 } from '../catalog/products/variant.service.js'
 import {
+  type InventoryReservation,
+  inventoryMovementModel,
+  inventoryReservationModel,
+} from './inventory.model.js'
+import { verifyAllocationPersistence, verifyInventoryPersistence } from './inventory.persistence.js'
+import {
+  adjustmentBody,
+  adjustmentInput,
+  adjustmentResult,
   allocationInput,
-  stockSnapshot,
   inventoryFacet,
   inventoryList,
   inventoryParams,
   inventoryQuery,
   movementQuery,
   movementView,
-  adjustmentBody,
-  adjustmentResult,
-  operationKey,
-  adjustmentInput,
   objectId,
+  operationKey,
+  stockSnapshot,
 } from './inventory.schema.js'
-import {
-  inventoryMovementModel,
-  inventoryReservationModel,
-  type InventoryReservation,
-} from './inventory.model.js'
-import { verifyAllocationPersistence, verifyInventoryPersistence } from './inventory.persistence.js'
-import { createHash } from 'node:crypto'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { pageMeta } from '../../shared/pagination.js'
-import type { AdminAccountAccess } from '../auth/auth.public.js'
-import { inTransaction } from '../../shared/database/transaction.js'
 
 type Command = z.output<typeof allocationInput>
 

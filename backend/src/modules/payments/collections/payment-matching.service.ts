@@ -1,29 +1,31 @@
 import { createHash } from 'node:crypto'
-import { Types, type Connection } from 'mongoose'
+import { type Connection, Types } from 'mongoose'
 import { z } from 'zod'
-import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
-import type { createVerifiedAllocationService } from '../../orders/order-allocation.service.js'
-import { createCorrectionObligationService } from '../../refunds/obligations/correction-obligation.service.js'
-import { auditOperationReader, createAuditWriter } from '../../audit/audit.service.js'
-import { readProtectedFile } from '../../../shared/protected-file.js'
+import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { parseRevision } from '../../../shared/preconditions.js'
-import { ApiError } from '../../../shared/errors/app-error.js'
-import { paymentRecordModels, collectionAmounts } from './payment-record.model.js'
-import { paymentModel } from '../payment.model.js'
+import { readProtectedFile } from '../../../shared/protected-file.js'
+import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import type { AdminAccountAccess } from '../../auth/auth.public.js'
+import type { VerifiedAllocationService } from '../../orders/order.public.js'
+import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
+
+import { createCorrectionObligationService } from '../../refunds/obligations/correction-obligation.service.js'
 import { paymentInitiationModel } from '../attempts/payment-initiation.model.js'
-import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
-import { paymentInitiationKey } from '../attempts/payment-initiation.schema.js'
+
+import { paymentModel } from '../payment.model.js'
 import {
-  receiptLinkInput,
   collectionAllocationInput,
-  linkedReceipt,
   collectionSummary,
+  linkedReceipt,
+  type MatchingFacts,
   matchingId,
   matchingProof,
-  type MatchingFacts,
+  receiptLinkInput,
 } from './payment-matching.schema.js'
+import { collectionAmounts, paymentRecordModels } from './payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
@@ -56,16 +58,17 @@ function createPaymentMatchingService(
   connection: Connection,
   admins: AdminAccountAccess,
   orders: ReturnType<typeof verifiedFundingOrderAccess>,
-  allocation: ReturnType<typeof createVerifiedAllocationService>,
+  allocation: VerifiedAllocationService,
+  auditAccess: AuditAccess,
   verify?: PaymentMatchingAuthority,
   clock: () => Date = () => new Date(),
 ) {
   const { intake, collections, attempts } = paymentRecordModels(connection),
     payments = paymentModel(connection),
     initiations = paymentInitiationModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection),
-    corrections = createCorrectionObligationService(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup,
+    corrections = createCorrectionObligationService(connection, auditAccess)
   const summary = (row: InstanceType<typeof collections>) =>
     collectionSummary.parse({
       id: row._id.toHexString(),
@@ -485,5 +488,5 @@ function createPaymentMatchingService(
   }
 }
 
-export { protectedPaymentMatchingEvidence, createPaymentMatchingService }
 export type { PaymentMatchingAuthority }
+export { createPaymentMatchingService, protectedPaymentMatchingEvidence }

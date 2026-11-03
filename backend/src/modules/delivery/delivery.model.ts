@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import {
   integerField,
   mutableSchemaOptions,
@@ -107,5 +107,5 @@ function deliveryModels(connection: Connection) {
   }
 }
 
+export type { DeliveryCharge, DeliveryZone }
 export { deliveryModels }
-export type { DeliveryZone, DeliveryCharge }

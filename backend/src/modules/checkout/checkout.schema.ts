@@ -1,13 +1,14 @@
-import { text } from '../catalog/catalog.schema.js'
 import { z } from 'zod'
-import { addressInput, bangladeshPhone } from '../customers/customer.schema.js'
-import { couponCode } from '../promotions/promotion.schema.js'
+import { bangladeshPhone, boundedText as text } from '../../shared/validation.js'
+
 import { attributes } from '../catalog/products/variant.schema.js'
+import { addressInput } from '../customers/customer.schema.js'
 import { deliveryDeadline, deliveryDeadlineBasis } from '../orders/delivery-deadline.schema.js'
 import {
   paymentChannel,
   paymentMethodEligibility,
 } from '../payments/attempts/payment-eligibility.schema.js'
+import { couponCode } from '../promotions/promotion.schema.js'
 import { policyType } from '../settings/setting.schema.js'
 
 const quoteId = z.string().regex(/^[a-f0-9]{24}$/)
@@ -127,14 +128,14 @@ const checkoutCommercialSnapshot = z.strictObject({
 })
 
 export {
-  quoteId,
+  checkoutCommercialSnapshot,
+  checkoutQuote,
   checkoutQuoteInput,
   checkoutSubmitInput,
+  normalizedCheckoutDraft,
+  quoteCouponSnapshot,
+  quoteId,
   quoteLine,
   quotePolicyRef,
   quoteTotals,
-  checkoutQuote,
-  normalizedCheckoutDraft,
-  quoteCouponSnapshot,
-  checkoutCommercialSnapshot,
 }

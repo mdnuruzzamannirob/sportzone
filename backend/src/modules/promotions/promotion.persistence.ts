@@ -199,4 +199,4 @@ async function verifyCouponPersistence(connection: Connection) {
   await verifyDeclaredIndexes(models.customers)
 }
 
-export { initializeCouponPersistence, verifyCouponPersistence, couponValidators }
+export { couponValidators, initializeCouponPersistence, verifyCouponPersistence }

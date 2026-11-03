@@ -1,8 +1,8 @@
-import { Schema, Types, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema, Types } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../../shared/database/schema.js'
+import { embedded, text } from '../model-fields.js'
 import { description, slug } from './product.schema.js'
 import { variantSchema } from './variant.model.js'
-import { text, embedded } from '../model-fields.js'
 
 const image = new Schema(
   {
@@ -117,5 +117,5 @@ function productModels(connection: Connection) {
   }
 }
 
-export { productModels }
 export type { Product, ProductVariant }
+export { productModels }

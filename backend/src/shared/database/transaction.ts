@@ -1,5 +1,5 @@
-import type { ClientSession, Connection } from 'mongoose'
 import { AsyncLocalStorage } from 'node:async_hooks'
+import type { ClientSession, Connection } from 'mongoose'
 import { DatabaseError } from '../errors/database-error.js'
 
 const scope = new AsyncLocalStorage<boolean>()
@@ -12,7 +12,7 @@ const options = {
   timeoutMS: 10000,
 } satisfies NonNullable<Parameters<ClientSession['withTransaction']>[1]>
 // Callback may rerun. Sequential DB operations only; never provider/email/media calls.
-export async function inTransaction<T>(
+async function inTransaction<T>(
   connection: Connection,
   work: (session: ClientSession) => Promise<T>,
 ) {
@@ -20,6 +20,8 @@ export async function inTransaction<T>(
   return scope.run(true, () => connection.transaction(work, options))
 }
 
-export function assertOutsideTransaction() {
+function assertOutsideTransaction() {
   if (scope.getStore()) throw new DatabaseError('EXTERNAL_EFFECT_IN_TRANSACTION')
 }
+
+export { assertOutsideTransaction, inTransaction }

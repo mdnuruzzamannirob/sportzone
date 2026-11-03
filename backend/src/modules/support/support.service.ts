@@ -1,43 +1,48 @@
+import { createHash, randomUUID } from 'node:crypto'
+import { type Connection, Types } from 'mongoose'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { pageMeta, paginationSchema } from '../../shared/pagination.js'
 import {
-  complaintAdminDetail,
+  resourceId as orderId,
+  idempotencyKey as paymentInitiationKey,
+} from '../../shared/validation.js'
+import type { AuditAccess } from '../audit/audit.public.js'
+import type {
+  AdminAccountAccess,
+  CheckoutAccess,
+  CheckoutCredentials,
+  OrderScopeAccess,
+  PaymentInitiationCredentials,
+} from '../auth/auth.public.js'
+
+import type { complaintOrderAccess } from '../orders/order.service.js'
+
+import { complaintModel } from './support.model.js'
+import { verifyComplaintPersistence } from './support.persistence.js'
+import {
   complaintAdminQuery as adminQuery,
-  complaintIntakeInput,
+  complaintAdminDetail,
   complaintInput,
+  complaintIntakeInput,
   complaintResolution,
   complaintView,
 } from './support.schema.js'
-import type {
-  checkoutAccess,
-  CheckoutCredentials,
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-} from '../auth/checkout-access.service.js'
-import { randomUUID, createHash } from 'node:crypto'
-import { Types, type Connection } from 'mongoose'
-import type { AdminAccountAccess } from '../auth/auth.public.js'
-import type { complaintOrderAccess } from '../orders/order.service.js'
-import { orderId } from '../orders/order.schema.js'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
-import { paymentInitiationKey } from '../payments/attempts/payment-initiation.schema.js'
-import { complaintModel } from './support.model.js'
-import { verifyComplaintPersistence } from './support.persistence.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { paginationSchema, pageMeta } from '../../shared/pagination.js'
 
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 
 function createComplaintService(
   connection: Connection,
-  scope: ReturnType<typeof orderScopeAccess>,
+  scope: OrderScopeAccess,
   orders: ReturnType<typeof complaintOrderAccess>,
   admin: AdminAccountAccess,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
-  publicAccess?: ReturnType<typeof checkoutAccess>,
+  publicAccess?: CheckoutAccess,
 ) {
   const model = complaintModel(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   const view = (row: InstanceType<typeof model>) =>
     complaintView.parse({
       id: row._id.toHexString(),

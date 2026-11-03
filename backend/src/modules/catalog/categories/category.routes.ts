@@ -1,16 +1,15 @@
-import { createCategoryAdminController } from './category.controller.js'
 import { Router } from 'express'
-import type { BrowserSecurity } from '../../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../../auth/sessions/session.service.js'
-import { createSessionHttp } from '../../auth/sessions/session.http.js'
+import type { BrowserSecurity, SessionHttp } from '../../auth/auth.public.js'
+import { createCategoryAdminController } from './category.controller.js'
+
 import type { createCategoryAdminService } from './category.service.js'
 
 function createCategoryAdminRoutes(
   service: ReturnType<typeof createCategoryAdminService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createCategoryAdminController(service)
+  const controller = createCategoryAdminController(service, sessionHttp)
 
   const router = Router()
   for (const path of [
@@ -23,7 +22,7 @@ function createCategoryAdminRoutes(
     '/admin/categories',
     security.cors('admin'),
     security.require('admin', 'admin'),
-    createSessionHttp(sessions).require('admin'),
+    sessionHttp.require('admin'),
     (_req, res, next) => {
       res.set('Access-Control-Expose-Headers', 'X-Request-Id, ETag')
       next()

@@ -1,21 +1,20 @@
-import { createReviewController } from './review.controller.js'
 import { Router } from 'express'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import type { createReviewService, createReviewQueryService } from './review.service.js'
+import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
+import { createReviewController } from './review.controller.js'
+
+import type { createReviewQueryService, createReviewService } from './review.service.js'
 
 // Root composition supplies canonical eligibility, visibility and current-session moderation.
 function createReviewRoutes(
   query: ReturnType<typeof createReviewQueryService>,
   service: ReturnType<typeof createReviewService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createReviewController(query, service)
+  const controller = createReviewController(query, service, sessionHttp)
 
   const router = Router(),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
 
   for (const path of ['/products/:productId/reviews', '/reviews/:reviewId', '/me/reviews'])
     router.options(path, security.cors('storefront'))

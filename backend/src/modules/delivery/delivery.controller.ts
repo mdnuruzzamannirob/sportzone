@@ -2,9 +2,9 @@ import type { Request, RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import { zoneParams, chargeParams } from './delivery.schema.js'
-import type { DeliveryService } from './delivery.service.js'
 import type { DeliveryAreasAccess } from './delivery.public.js'
+import { chargeParams, zoneParams } from './delivery.schema.js'
+import type { DeliveryService } from './delivery.service.js'
 
 function createDeliveryController(
   service: DeliveryService,
@@ -66,4 +66,4 @@ function createDeliveryAreasController(read: DeliveryAreasAccess): RequestHandle
   }
 }
 
-export { createDeliveryController, createDeliveryAreasController }
+export { createDeliveryAreasController, createDeliveryController }

@@ -2,15 +2,17 @@ import type { RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
-import type { createSettingService, createPolicyService } from './setting.service.js'
+import type { SessionCookies } from '../auth/auth.public.js'
 import { policyParams } from './setting.schema.js'
+import type { createPolicyService, createSettingService } from './setting.service.js'
 
 function createSettingsAdminController(
   settings: ReturnType<typeof createSettingService>,
   policies: ReturnType<typeof createPolicyService>,
+  cookies: SessionCookies,
 ) {
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'admin')
+  const token = (req: import('express').Request) =>
+    cookies.readSessionCookie(req.get('Cookie'), 'admin')
   const id = (req: import('express').Request) => parseInput(policyParams, req.params).policyId
   const getAdminSettings: RequestHandler = async (req, res) => {
     const result = await settings.get(token(req))

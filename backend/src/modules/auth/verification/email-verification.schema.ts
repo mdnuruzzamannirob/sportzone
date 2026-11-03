@@ -8,4 +8,4 @@ const emailVerificationConfirmation = z.strictObject({
   token: z.string().regex(proofPattern),
 })
 
-export { emailVerificationInput, emailVerificationConfirmation }
+export { emailVerificationConfirmation, emailVerificationInput }

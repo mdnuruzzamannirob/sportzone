@@ -1,12 +1,13 @@
-import type { Connection } from 'mongoose'
 import { createHash, createHmac } from 'node:crypto'
-import { inTransaction, assertOutsideTransaction } from '../../../shared/database/transaction.js'
+import type { Connection } from 'mongoose'
+import { assertOutsideTransaction, inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
-import { createAuditWriter } from '../../audit/audit.service.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+
 import {
+  type PaymentCallbackOptions,
   paymentCallbackOptions,
   paymentIpnForm,
-  type PaymentCallbackOptions,
 } from './payment-callback.schema.js'
 
 // Claims are notifications only. The independent processor owns provider verification and all durable
@@ -27,12 +28,13 @@ function createPaymentCallbackService(
   connection: Connection,
   rawOptions: PaymentCallbackOptions,
   secret: string,
+  auditAccess: AuditAccess,
   process?: PaymentCallbackProcessor,
   clock: () => Date = () => new Date(),
 ) {
   if (!/^[a-f0-9]{64}$/.test(secret)) throw new Error('Invalid callback protection configuration')
   const options = paymentCallbackOptions.parse(rawOptions),
-    audit = createAuditWriter(connection),
+    audit = auditAccess.write,
     merchantAccountKey = createHash('sha256')
       .update(`${options.mode}\0${options.storeId}`)
       .digest('hex')
@@ -100,5 +102,5 @@ function createPaymentCallbackService(
   }
 }
 
-export { createPaymentCallbackService }
 export type { PaymentCallbackClaim, PaymentCallbackProcessor }
+export { createPaymentCallbackService }

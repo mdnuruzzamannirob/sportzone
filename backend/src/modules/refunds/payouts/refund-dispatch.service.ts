@@ -1,17 +1,17 @@
-import type { RefundNotifier } from './refund-recovery.service.js'
 import { createHash } from 'node:crypto'
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
-import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { refundFundingAccess } from '../../payments/payment.service.js'
-import type { createSslcommerzAdapter } from '../../../providers/sslcommerz/sslcommerz.client.js'
-import { createAuditWriter, auditOperationReader } from '../../audit/audit.service.js'
 import { assertOutsideTransaction, inTransaction } from '../../../shared/database/transaction.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
+import { parseInput } from '../../../shared/middleware/validate.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import type { AdminAccountAccess } from '../../auth/auth.public.js'
+import type { PaymentGateway, RefundFundingAccess } from '../../payments/payment.public.js'
+
 import { refundModel } from '../refund.model.js'
-import { refundAttemptModel } from './refund-attempt.model.js'
 import { verifyCorrectionPersistence } from '../refund.persistence.js'
+import type { RefundNotifier } from '../refund.public.js'
+import { refundAttemptModel } from './refund-attempt.model.js'
 import { verifyRefundAttemptPersistence } from './refund-attempt.persistence.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
@@ -32,16 +32,17 @@ const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 function createRefundDispatchService(
   connection: Connection,
   admins: AdminAccountAccess,
-  funding: ReturnType<typeof refundFundingAccess>,
-  gateway: Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiateRefund'>,
+  funding: RefundFundingAccess,
+  gateway: Pick<PaymentGateway, 'initiateRefund'>,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
   merchantAccountKey?: string,
   notify?: RefundNotifier,
 ) {
   const refunds = refundModel(connection),
     attempts = refundAttemptModel(connection)
-  const audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+  const audit = auditAccess.write,
+    lookup = auditAccess.lookup
   return {
     async dispatch(token: string | undefined, rawId: unknown, raw: unknown, rawKey: unknown) {
       assertOutsideTransaction()

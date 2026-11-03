@@ -58,12 +58,12 @@ const matchingProof = z.strictObject({
 
 type MatchingFacts = z.output<typeof matchingProof>
 
-export {
-  matchingId,
-  receiptLinkInput,
-  collectionAllocationInput,
-  linkedReceipt,
-  collectionSummary,
-  matchingProof,
-}
 export type { MatchingFacts }
+export {
+  collectionAllocationInput,
+  collectionSummary,
+  linkedReceipt,
+  matchingId,
+  matchingProof,
+  receiptLinkInput,
+}

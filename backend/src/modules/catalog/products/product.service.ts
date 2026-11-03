@@ -1,33 +1,33 @@
-import { verifyProductPersistence } from './product.persistence.js'
-import { type ClientSession, type Connection, Types } from 'mongoose'
-import { ApiError } from '../../../shared/errors/app-error.js'
-import { inTransaction } from '../../../shared/database/transaction.js'
-import { createCategoryService } from '../categories/category.service.js'
-import { productModels } from './product.model.js'
-import {
-  attributeSignature,
-  productInput,
-  variantBatch,
-  productCreate,
-  productPatch,
-  productDeactivate,
-  productParams,
-  productListQuery,
-  adminProduct,
-  adminProductDetail,
-} from './product.schema.js'
 import { createHash, randomUUID } from 'node:crypto'
+import { type ClientSession, type Connection, Types } from 'mongoose'
+import { inTransaction } from '../../../shared/database/transaction.js'
+import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { pageMeta } from '../../../shared/pagination.js'
 import { parseRevision } from '../../../shared/preconditions.js'
 import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { MediaService } from '../../media/media.service.js'
+import type { PublicMediaReferences } from '../../media/media.public.js'
+import { createCategoryService } from '../categories/category.service.js'
+import { productModels } from './product.model.js'
+import { verifyProductPersistence } from './product.persistence.js'
 import {
-  variantInput,
-  variantPatch,
-  variantParams,
-  variantDeactivate,
+  adminProduct,
+  adminProductDetail,
+  attributeSignature,
+  productCreate,
+  productDeactivate,
+  productInput,
+  productListQuery,
+  productParams,
+  productPatch,
+  variantBatch,
+} from './product.schema.js'
+import {
   adminVariant,
+  variantDeactivate,
+  variantInput,
+  variantParams,
+  variantPatch,
 } from './variant.schema.js'
 
 function createProductService(
@@ -189,7 +189,7 @@ function createProductAdminService(
   connection: Connection,
   access: AdminAccountAccess,
   audit: (session: ClientSession, event: unknown) => Promise<void>,
-  media?: Pick<MediaService, 'changePublicReference'>,
+  media?: Pick<PublicMediaReferences, 'changePublicReference'>,
 ) {
   const models = productModels(connection),
     categories = createCategoryService(connection),
@@ -315,7 +315,7 @@ function createProductAdminService(
         token,
         old.publicId,
         null,
-        { targetType: 'product', targetId: id, slot: `image:${i}` },
+        { targetType: 'product', targetId: id.toHexString(), slot: `image:${i}` },
         session,
         async () => {},
       )
@@ -326,7 +326,7 @@ function createProductAdminService(
         token,
         undefined,
         { ...next, alt: next.alt || name },
-        { targetType: 'product', targetId: id, slot: `image:${i}` },
+        { targetType: 'product', targetId: id.toHexString(), slot: `image:${i}` },
         session,
         async (resolved) => {
           if (resolved) result.push({ ...resolved, position: i })
@@ -588,4 +588,4 @@ function createProductAdminService(
   }
 }
 
-export { createProductAdminService, createProductService, productReviewAccess, catalogReportAccess }
+export { catalogReportAccess, createProductAdminService, createProductService, productReviewAccess }

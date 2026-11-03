@@ -1,21 +1,18 @@
-import type { RequestHandler } from 'express'
-import type { Request } from 'express'
+import type { Request, RequestHandler } from 'express'
 import { z } from 'zod'
-import { readContextCookie } from '../auth/sessions/browser-security.service.js'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
-import type { createComplaintService } from './support.service.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import type { CustomerAccountAccess } from '../auth/auth.public.js'
-import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
+import type { CustomerAccountAccess, SessionCookies } from '../auth/auth.public.js'
+import type { createComplaintService } from './support.service.js'
 
 function createSupportReadController(
   complaints: Pick<ReturnType<typeof createComplaintService>, 'adminList'>,
+  cookies: SessionCookies,
 ) {
   const getAdminComplaints: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
     const result = await complaints.adminList(
-      readSessionCookie(req.get('Cookie'), 'admin'),
+      cookies.readSessionCookie(req.get('Cookie'), 'admin'),
       req.query,
     )
     respond(res, result.items, 200, result.pagination)
@@ -24,21 +21,24 @@ function createSupportReadController(
   return { getAdminComplaints }
 }
 
-function createSupportController(deps: {
-  complaints: ReturnType<typeof createComplaintService>
-  customers: CustomerAccountAccess
-}) {
+function createSupportController(
+  deps: {
+    complaints: ReturnType<typeof createComplaintService>
+    customers: CustomerAccountAccess
+  },
+  cookies: SessionCookies,
+) {
   const id = z.string().regex(/^[a-f0-9]{24}$/)
   const credentials = (req: Request) => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: readGuestCookie(req.get('Cookie')),
+    customerToken: cookies.readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: cookies.readGuestCookie(req.get('Cookie')),
     guestPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((part) => part.trim().startsWith('sz_guest_order_sid=')),
-    contextToken: readContextCookie(req.get('Cookie'), 'storefront'),
+    contextToken: cookies.readContextCookie(req.get('Cookie'), 'storefront'),
     csrfToken: req.get('X-CSRF-Token'),
   })
   const postComplaints: RequestHandler = async (req, res) => {
@@ -52,7 +52,7 @@ function createSupportController(deps: {
   const getMeComplaints: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
     const result = await deps.complaints.mine(
-      readSessionCookie(req.get('Cookie'), 'customer'),
+      cookies.readSessionCookie(req.get('Cookie'), 'customer'),
       req.query,
       deps.customers,
     )
@@ -75,7 +75,7 @@ function createSupportController(deps: {
     respond(
       res,
       await deps.complaints.adminDetail(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         parseInput(z.strictObject({ complaintId: id }), req.params).complaintId,
       ),
     )
@@ -85,7 +85,7 @@ function createSupportController(deps: {
     respond(
       res,
       await deps.complaints.resolve(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         parseInput(z.strictObject({ complaintId: id }), req.params).complaintId,
         req.body,
         req.get('Idempotency-Key'),
@@ -102,4 +102,4 @@ function createSupportController(deps: {
   }
 }
 
-export { createSupportReadController, createSupportController }
+export { createSupportController, createSupportReadController }

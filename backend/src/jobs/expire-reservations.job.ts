@@ -1,22 +1,23 @@
 import type { Connection } from 'mongoose'
 import { z } from 'zod'
-import { parseInput } from '../shared/middleware/validate.js'
+import type { ReservationExpiry } from '../modules/checkout/checkout.public.js'
 import { inTransaction } from '../shared/database/transaction.js'
-import { jobLeaseService } from '../shared/jobs/job-lease.service.js'
-import { createCheckoutExpiryService } from '../modules/checkout/checkout.service.js'
 import { ApiError } from '../shared/errors/app-error.js'
-export const reservationExpiryOptions = z.strictObject({
+import { jobLeaseService } from '../shared/jobs/job-lease.service.js'
+import { parseInput } from '../shared/middleware/validate.js'
+
+const reservationExpiryOptions = z.strictObject({
   batchSize: z.int().min(1).max(100),
   leaseMs: z.int().min(1000).max(3600000),
 })
-export function reservationExpiryJob(
+function reservationExpiryJob(
   connection: Connection,
+  expiry: ReservationExpiry,
   raw: unknown,
   clock: () => Date = () => new Date(),
 ) {
   const options = parseInput(reservationExpiryOptions, raw),
-    leases = jobLeaseService(connection, 'reservation-expiry', options.leaseMs, clock),
-    expiry = createCheckoutExpiryService(connection, clock)
+    leases = jobLeaseService(connection, 'reservation-expiry', options.leaseMs, clock)
   return {
     async run() {
       const claim = await leases.acquire()
@@ -56,3 +57,5 @@ export function reservationExpiryJob(
     },
   }
 }
+
+export { reservationExpiryJob, reservationExpiryOptions }

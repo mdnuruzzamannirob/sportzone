@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { type ClientSession, type Connection, Types } from 'mongoose'
 import type { RecoveryOptions } from '../../../config/security.js'
-import { changeInput, confirmation, issuance } from './password-recovery.schema.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
@@ -13,6 +12,7 @@ import type { BrowserSecurity } from '../sessions/browser-security.service.js'
 import { ChallengeUnavailableError, consumeUserChallenge } from '../sessions/session.persistence.js'
 import type { SessionKind, SessionService } from '../sessions/session.service.js'
 import { createProofCodec, proofHash } from '../verification/proof.crypto.js'
+import { changeInput, confirmation, issuance } from './password-recovery.schema.js'
 
 function createRecoveryService(
   connection: Connection,
@@ -249,5 +249,5 @@ function createRecoveryService(
 type RecoveryService = ReturnType<typeof createRecoveryService>
 
 export { loadRecoveryOptions, type RecoveryOptions } from '../../../config/security.js'
-export { createRecoveryService }
 export type { RecoveryService }
+export { createRecoveryService }

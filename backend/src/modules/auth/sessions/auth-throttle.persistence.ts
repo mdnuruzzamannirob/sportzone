@@ -122,5 +122,5 @@ function createAuthQuotaStore(connection: Connection) {
   }
 }
 
-export { createAuthQuotaStore }
 export type { QuotaStore }
+export { createAuthQuotaStore }

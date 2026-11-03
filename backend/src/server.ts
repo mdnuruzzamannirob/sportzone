@@ -1,26 +1,12 @@
-import { loadOperationsOptions } from './config/operations.js'
-import { protectedRefundEvidence } from './modules/refunds/payouts/refund-evidence.service.js'
-import { createHash } from 'node:crypto'
-import { loadRefundOperationsOptions } from './config/refunds.js'
-import { loadSslcommerzOptions } from './config/payments.js'
-import { loadReturnOperationsOptions, loadAfterSalesHistory } from './config/returns.js'
-import { loadOrderOperationsOptions } from './config/order-operations.js'
-import { configuredOrderOperations, configuredReturnMedia, configuredPublicMedia } from './setup.js'
-import { loadPaymentCallbackOptions, loadPaymentProcessingOptions } from './config/payments.js'
-import { createSslcommerzAdapter } from './providers/sslcommerz/sslcommerz.client.js'
-import { initiationInput } from './providers/sslcommerz/sslcommerz.schema.js'
-import { loadPaymentChannelApprovals, loadPaymentInitiationOptions } from './config/payments.js'
-import { loadCheckoutOptions } from './config/checkout.js'
-import { loadPolicyApprovals } from './config/settings.js'
 import { createServer } from 'node:http'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { composeApplication } from './setup.js'
-import { ConfigurationError, loadEnvironment, type RuntimeConfig } from './config/env.js'
 import { openDatabase } from './config/database.js'
+import { ConfigurationError, loadEnvironment, type RuntimeConfig } from './config/env.js'
+import { composeConfiguredApplication } from './setup.js'
 import { createLogger, logConfigurationFailure } from './shared/logger.js'
 
-export async function startServer(
+async function startServer(
   config: RuntimeConfig,
   logger = createLogger(config, undefined, [
     config.MONGODB_URI,
@@ -39,65 +25,9 @@ export async function startServer(
       return !draining && connection.readyState === 1
     },
   }
-  let app: Awaited<ReturnType<typeof composeApplication>>
+  let app: Awaited<ReturnType<typeof composeConfiguredApplication>>
   try {
-    const initiationOptions = loadPaymentInitiationOptions(process.env)
-    const initiationGateway = initiationOptions
-      ? createSslcommerzAdapter(initiationOptions)
-      : undefined
-    const callbackOptions = loadPaymentCallbackOptions(process.env)
-    const processingOptions = loadPaymentProcessingOptions(process.env)
-    const orderOperations = await loadOrderOperationsOptions(process.env)
-    const refundOptions = await loadRefundOperationsOptions(process.env)
-    const refundGateway = refundOptions ? loadSslcommerzOptions(process.env) : undefined
-    const returnOptions = await loadReturnOperationsOptions(process.env)
-    app = await composeApplication(
-      connection,
-      config,
-      health,
-      logger,
-      returnOptions ? configuredReturnMedia(process.env) : configuredPublicMedia(process.env),
-      await loadPolicyApprovals(process.env),
-      await loadCheckoutOptions(process.env),
-      await loadPaymentChannelApprovals(process.env),
-      initiationGateway
-        ? {
-            gateway: initiationGateway,
-            reconciliationGateway: initiationGateway,
-            validateRequest: (input) => initiationInput.safeParse(input).success,
-          }
-        : undefined,
-      callbackOptions
-        ? {
-            options: callbackOptions,
-            ...(processingOptions
-              ? { verificationGateway: createSslcommerzAdapter(processingOptions) }
-              : {}),
-          }
-        : undefined,
-      orderOperations ? configuredOrderOperations(connection, orderOperations) : undefined,
-      returnOptions,
-      refundOptions
-        ? {
-            options: refundOptions,
-            ...(process.env.REFUND_PAYOUT_EVIDENCE_FILE
-              ? { verifyEvidence: protectedRefundEvidence(process.env.REFUND_PAYOUT_EVIDENCE_FILE) }
-              : {}),
-            ...(refundGateway
-              ? {
-                  gateway: {
-                    client: createSslcommerzAdapter(refundGateway),
-                    merchantAccountKey: createHash('sha256')
-                      .update(`${refundGateway.mode}\0${refundGateway.storeId}`)
-                      .digest('hex'),
-                  },
-                }
-              : {}),
-          }
-        : undefined,
-      loadAfterSalesHistory(process.env),
-      loadOperationsOptions(process.env),
-    )
+    app = await composeConfiguredApplication(connection, config, health, logger, process.env)
   } catch (error) {
     await connection.destroy()
     throw error
@@ -179,3 +109,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     process.exitCode = 1
   }
 }
+
+export { startServer }

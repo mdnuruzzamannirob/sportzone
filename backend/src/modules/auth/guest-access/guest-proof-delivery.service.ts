@@ -1,8 +1,8 @@
 import type { Types } from 'mongoose'
-import type { IdentityModels } from '../auth.model.js'
 import type { GuestAccessOptions } from '../../../config/security.js'
 import type { GuestOrderAccess } from '../../orders/order.public.js'
-import { createProofCodec, proofHash, type ProofEnvelope } from '../verification/proof.crypto.js'
+import type { IdentityModels } from '../auth.model.js'
+import { createProofCodec, type ProofEnvelope, proofHash } from '../verification/proof.crypto.js'
 
 function guestProofDelivery(
   models: IdentityModels,
@@ -102,5 +102,5 @@ function guestProofDelivery(
 
 type GuestProofDelivery = ReturnType<typeof guestProofDelivery>
 
-export { guestProofDelivery }
 export type { GuestProofDelivery }
+export { guestProofDelivery }

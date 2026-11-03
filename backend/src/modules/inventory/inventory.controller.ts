@@ -2,12 +2,17 @@ import type { RequestHandler } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
+import type { SessionCookies } from '../auth/auth.public.js'
+
 import { inventoryParams } from './inventory.schema.js'
 import type { createInventoryAdminService } from './inventory.service.js'
 
-function createInventoryAdminController(service: ReturnType<typeof createInventoryAdminService>) {
-  const token = (req: import('express').Request) => readSessionCookie(req.get('Cookie'), 'admin')
+function createInventoryAdminController(
+  service: ReturnType<typeof createInventoryAdminService>,
+  cookies: SessionCookies,
+) {
+  const token = (req: import('express').Request) =>
+    cookies.readSessionCookie(req.get('Cookie'), 'admin')
   const id = (req: import('express').Request) => parseInput(inventoryParams, req.params).variantId
   const getAdminInventory: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)

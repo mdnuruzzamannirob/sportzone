@@ -1,23 +1,29 @@
+import { type RequestHandler, Router } from 'express'
+import { z } from 'zod'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
 import {
   createSettingsAdminController,
   createSettingsPublicController,
 } from './setting.controller.js'
-import { Router, type RequestHandler } from 'express'
-import { z } from 'zod'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { parseInput } from '../../shared/middleware/validate.js'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
-import type { createSettingService, createPolicyService } from './setting.service.js'
+
+import type {
+  createPolicyService,
+  createSettingService,
+} from './setting.service.js'
 
 function createSettingAdminRoutes(
   settings: ReturnType<typeof createSettingService>,
   policies: ReturnType<typeof createPolicyService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createSettingsAdminController(settings, policies)
+  const controller = createSettingsAdminController(
+    settings,
+    policies,
+    sessionHttp,
+  )
 
   const router = Router()
   for (const path of [
@@ -32,7 +38,7 @@ function createSettingAdminRoutes(
     '/admin/settings',
     security.cors('admin'),
     security.require('admin', 'admin'),
-    createSessionHttp(sessions).require('admin'),
+    sessionHttp.require('admin'),
     (_req, res, next) => {
       res.set('Access-Control-Expose-Headers', 'X-Request-Id, ETag')
       next()
@@ -49,9 +55,21 @@ function createSettingAdminRoutes(
   router.get('/admin/settings', clean, controller.getAdminSettings)
   router.patch('/admin/settings', clean, controller.patchAdminSettings)
   router.get('/admin/settings/policies', controller.getSettingsPolicies)
-  router.post('/admin/settings/policies', clean, controller.postSettingsPolicies)
-  router.get('/admin/settings/policies/:policyId', clean, controller.getSettingsPolicies2)
-  router.patch('/admin/settings/policies/:policyId', clean, controller.patchSettingsPolicies)
+  router.post(
+    '/admin/settings/policies',
+    clean,
+    controller.postSettingsPolicies,
+  )
+  router.get(
+    '/admin/settings/policies/:policyId',
+    clean,
+    controller.getSettingsPolicies2,
+  )
+  router.patch(
+    '/admin/settings/policies/:policyId',
+    clean,
+    controller.patchSettingsPolicies,
+  )
   for (const action of ['approve', 'publish'] as const)
     router.post(
       `/admin/settings/policies/:policyId/${action}`,
@@ -84,7 +102,9 @@ function createSettingPublicRoutes(
         .filter(Boolean)
       if (
         !origin ||
-        !['GET', 'HEAD'].includes(req.get('Access-Control-Request-Method') ?? '') ||
+        !['GET', 'HEAD'].includes(
+          req.get('Access-Control-Request-Method') ?? '',
+        ) ||
         headers.some((v) => v !== 'content-type')
       )
         throw new ApiError('FORBIDDEN')
@@ -102,7 +122,11 @@ function createSettingPublicRoutes(
   for (const path of ['/storefront/contact', '/storefront/policies/:type'])
     router.options(path, cors)
   router.get('/storefront/contact', cors, controller.getStorefrontContact)
-  router.get('/storefront/policies/:type', cors, controller.getStorefrontPolicies)
+  router.get(
+    '/storefront/policies/:type',
+    cors,
+    controller.getStorefrontPolicies,
+  )
   return router
 }
 

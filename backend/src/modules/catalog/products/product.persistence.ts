@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { verifyDeclaredIndexes } from '../../../shared/database/indexes.js'
 import { productModels } from './product.model.js'
 
@@ -202,4 +202,4 @@ async function verifyProductPersistence(connection: Connection) {
   await verifyDeclaredIndexes(models.variants)
 }
 
-export { initializeProductPersistence, verifyProductPersistence, productCollectionValidators }
+export { initializeProductPersistence, productCollectionValidators, verifyProductPersistence }

@@ -23,4 +23,4 @@ const paymentRiskResult = z.strictObject({
   ]),
 })
 
-export { paymentRiskParams, paymentRiskInput, paymentRiskResult }
+export { paymentRiskInput, paymentRiskParams, paymentRiskResult }

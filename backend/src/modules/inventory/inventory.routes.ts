@@ -1,16 +1,15 @@
-import { createInventoryAdminController } from './inventory.controller.js'
 import { Router } from 'express'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
+import type { BrowserSecurity, SessionHttp } from '../auth/auth.public.js'
+import { createInventoryAdminController } from './inventory.controller.js'
+
 import type { createInventoryAdminService } from './inventory.service.js'
 
 function createInventoryAdminRoutes(
   service: ReturnType<typeof createInventoryAdminService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createInventoryAdminController(service)
+  const controller = createInventoryAdminController(service, sessionHttp)
 
   const router = Router()
   for (const path of [
@@ -24,7 +23,7 @@ function createInventoryAdminRoutes(
       path,
       security.cors('admin'),
       security.require('admin', 'admin'),
-      createSessionHttp(sessions).require('admin'),
+      sessionHttp.require('admin'),
     )
 
   router.get('/admin/inventory', controller.getAdminInventory)

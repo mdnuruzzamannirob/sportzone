@@ -1,33 +1,31 @@
-import type { createPaymentRetryService } from './payment-retry.service.js'
-import { paymentModel } from '../payment.model.js'
-import { verifyPaymentRecordPersistence } from '../collections/payment-record.persistence.js'
 import { createHash } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
+import type { initiationInput } from '../../../providers/sslcommerz/sslcommerz.schema.js'
+import { assertOutsideTransaction, inTransaction } from '../../../shared/database/transaction.js'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import { inTransaction, assertOutsideTransaction } from '../../../shared/database/transaction.js'
-import { createAuditWriter } from '../../audit/audit.service.js'
+import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+
+import { paymentRecordModels } from '../collections/payment-record.model.js'
+import { verifyPaymentRecordPersistence } from '../collections/payment-record.persistence.js'
+import { paymentModel } from '../payment.model.js'
+import type { PaymentGateway } from '../payment.public.js'
 import {
   createPaymentAttemptService,
   type PaymentAttemptAccess,
 } from './payment-attempt.service.js'
-import { paymentRecordModels } from '../collections/payment-record.model.js'
 import { paymentInitiationModel } from './payment-initiation.model.js'
 import { verifyPaymentInitiationPersistence } from './payment-initiation.persistence.js'
-import {
-  paymentInitiationInput,
-  paymentInitiationKey,
-  paymentInitiationResult,
-} from './payment-initiation.schema.js'
-import type { createSslcommerzAdapter } from '../../../providers/sslcommerz/sslcommerz.client.js'
-import type { initiationInput } from '../../../providers/sslcommerz/sslcommerz.schema.js'
+import { paymentInitiationInput, paymentInitiationResult } from './payment-initiation.schema.js'
+import type { createPaymentRetryService } from './payment-retry.service.js'
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 
 type GatewayInput = z.output<typeof initiationInput>
 
-type Gateway = Pick<ReturnType<typeof createSslcommerzAdapter>, 'initiate'>
+type Gateway = Pick<PaymentGateway, 'initiate'>
 
 type PaymentInitiationAccess<Credentials> = Omit<PaymentAttemptAccess, 'authorize'> & {
   authorize(session: ClientSession, orderId: string): Promise<number>
@@ -65,6 +63,7 @@ function createPaymentInitiationService<Credentials>(
   access: PaymentInitiationAccess<Credentials>,
   gateway: Gateway,
   validateRequest: (request: unknown) => boolean,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
   retryGate?: ReturnType<typeof createPaymentRetryService>,
 ) {
@@ -87,9 +86,10 @@ function createPaymentInitiationService<Credentials>(
             throw new ApiError('STATE_CONFLICT')
         },
       },
+      auditAccess,
       clock,
     ),
-    audit = createAuditWriter(connection)
+    audit = auditAccess.write
   type Operation = InstanceType<typeof operations>
   async function readiness() {
     try {
@@ -489,5 +489,5 @@ function createPaymentInitiationService<Credentials>(
   }
 }
 
-export { createPaymentInitiationService }
 export type { PaymentInitiationAccess }
+export { createPaymentInitiationService }

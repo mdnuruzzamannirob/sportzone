@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { paymentAmounts, paymentModel, paymentStates } from './payment.model.js'
 
@@ -167,9 +167,9 @@ async function verifyPaymentPersistence(connection: Connection) {
 }
 
 export {
-  migratePaymentCorrectionProjection,
   initializePaymentPersistence,
-  verifyPaymentPersistence,
+  migratePaymentCorrectionProjection,
   paymentValidator,
   precedingPaymentValidator,
+  verifyPaymentPersistence,
 }

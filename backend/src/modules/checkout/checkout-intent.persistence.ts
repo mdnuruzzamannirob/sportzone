@@ -92,7 +92,7 @@ async function verifyCheckoutIntentPersistence(connection: Connection) {
 }
 
 export {
+  checkoutIntentValidator,
   initializeCheckoutIntentPersistence,
   verifyCheckoutIntentPersistence,
-  checkoutIntentValidator,
 }

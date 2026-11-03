@@ -80,5 +80,5 @@ function createEncryptionKeyring(
   return { seal, open }
 }
 
-export { createEncryptionKeyring, jsonDigest }
 export type { EncryptedEnvelope, EncryptionKeyring }
+export { createEncryptionKeyring, jsonDigest }

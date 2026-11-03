@@ -1,22 +1,26 @@
 import { createHash } from 'node:crypto'
-import { Types, type Connection } from 'mongoose'
+import { type Connection, Types } from 'mongoose'
+import { assertOutsideTransaction } from '../../../shared/database/transaction.js'
+import { ApiError } from '../../../shared/errors/app-error.js'
+import { parseInput } from '../../../shared/middleware/validate.js'
+import {
+  resourceId as orderId,
+  idempotencyKey as paymentInitiationKey,
+} from '../../../shared/validation.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
 import type { AdminAccountAccess } from '../../auth/auth.public.js'
-import type { codCollectionOrderAccess } from '../../orders/order.service.js'
-import { createAuditWriter, auditOperationReader } from '../../audit/audit.service.js'
+import type { CodCollectionOrderAccess } from '../../orders/order.public.js'
+
 import { createCorrectionObligationService } from '../../refunds/obligations/correction-obligation.service.js'
+
 import { paymentModel } from '../payment.model.js'
-import { collectionAmounts, paymentRecordModels } from './payment-record.model.js'
-import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
-import { paymentInitiationKey } from '../attempts/payment-initiation.schema.js'
 import {
   codCollectionInput,
   codCollectionProof,
   codCollectionSummary,
 } from './cod-collection.schema.js'
-import { orderId } from '../../orders/order.schema.js'
-import { ApiError } from '../../../shared/errors/app-error.js'
-import { parseInput } from '../../../shared/middleware/validate.js'
-import { assertOutsideTransaction } from '../../../shared/database/transaction.js'
+import { collectionAmounts, paymentRecordModels } from './payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 
 const hash = (v: string) => createHash('sha256').update(v).digest('hex')
 
@@ -24,7 +28,8 @@ const hash = (v: string) => createHash('sha256').update(v).digest('hex')
 function createCodCollectionService(
   connection: Connection,
   admin: AdminAccountAccess,
-  orders: ReturnType<typeof codCollectionOrderAccess>,
+  orders: CodCollectionOrderAccess,
+  auditAccess: AuditAccess,
   evidence?: (
     input: ReturnType<typeof codCollectionInput.parse> & {
       paymentId: string
@@ -34,9 +39,9 @@ function createCodCollectionService(
 ) {
   const payments = paymentModel(connection),
     { collections } = paymentRecordModels(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection),
-    correction = createCorrectionObligationService(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup,
+    correction = createCorrectionObligationService(connection, auditAccess)
   async function ready() {
     try {
       await verifyPaymentRecordPersistence(connection)

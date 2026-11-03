@@ -217,5 +217,5 @@ function createEmailChangeService(
 
 type EmailChangeService = ReturnType<typeof createEmailChangeService>
 
-export { createEmailChangeService }
 export type { EmailChangeService }
+export { createEmailChangeService }

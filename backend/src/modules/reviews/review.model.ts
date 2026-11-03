@@ -1,4 +1,4 @@
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
 const schema = new Schema(
@@ -65,5 +65,5 @@ function reviewModel(connection: Connection) {
     : connection.model<ReviewRecord>('Review', schema, 'reviews')
 }
 
-export { reviewModel }
 export type { ReviewRecord }
+export { reviewModel }

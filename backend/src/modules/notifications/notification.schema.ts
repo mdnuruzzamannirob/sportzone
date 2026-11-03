@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { paginationSchema } from '../../shared/pagination.js'
 import { ConfigurationError } from '../../shared/errors/configuration-error.js'
+import { paginationSchema } from '../../shared/pagination.js'
 
 const policy = z
   .strictObject({
@@ -65,13 +65,13 @@ const notificationRetryInput = z.strictObject({ reason: z.string().trim().min(1)
 
 const notificationRetryResult = z.strictObject({ status: notificationStatus })
 
+export type { RetryPolicy }
 export {
-  validateRetryPolicy,
-  notificationStatus,
-  notificationEvent,
   notificationAdminQuery,
   notificationAdminView,
+  notificationEvent,
   notificationRetryInput,
   notificationRetryResult,
+  notificationStatus,
+  validateRetryPolicy,
 }
-export type { RetryPolicy }

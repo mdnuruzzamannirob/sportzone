@@ -1,17 +1,20 @@
 import type { Connection } from 'mongoose'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import type { VerifiedAllocationService } from '../../orders/order.public.js'
 import type { verifiedFundingOrderAccess } from '../../orders/order.service.js'
-import type { createVerifiedAllocationService } from '../../orders/order-allocation.service.js'
-import type { createSslcommerzAdapter } from '../../../providers/sslcommerz/sslcommerz.client.js'
-import { createPaymentVerificationService } from '../collections/payment-verification.service.js'
+
 import { createPaymentProcessingService } from '../collections/payment-processing.service.js'
+import { createPaymentVerificationService } from '../collections/payment-verification.service.js'
+import type { PaymentGateway } from '../payment.public.js'
 
 // Trusted preflight facts come only from a currently authorized initiation transaction. Verification
 // and durable receipt processing run outside it; dispatch admission rechecks every identity afterward.
 function createPaymentRetryService(
   connection: Connection,
-  gateway: Pick<ReturnType<typeof createSslcommerzAdapter>, 'validate' | 'queryTransaction'>,
+  gateway: Pick<PaymentGateway, 'validate' | 'queryTransaction'>,
   orders: ReturnType<typeof verifiedFundingOrderAccess>,
-  allocation: ReturnType<typeof createVerifiedAllocationService>,
+  allocation: VerifiedAllocationService,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   return {
@@ -32,6 +35,7 @@ function createPaymentRetryService(
         { verify: async () => verified },
         orders,
         allocation,
+        auditAccess,
         clock,
       ).process(claim)
       return outcome === 'committed' &&

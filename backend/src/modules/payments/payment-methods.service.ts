@@ -2,8 +2,9 @@ import type { ClientSession, Connection } from 'mongoose'
 import { inTransaction } from '../../shared/database/transaction.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import type { paymentMethodAccess } from '../auth/checkout-access.service.js'
-import type { paymentMethodOrderAccess } from '../orders/order.service.js'
+import type { PaymentMethodAccess } from '../auth/auth.public.js'
+import type { PaymentMethodOrderAccess } from '../orders/order.public.js'
+
 import { paymentMethodsQuery, paymentMethodsView } from './attempts/payment-eligibility.schema.js'
 import { paymentEligibility } from './attempts/payment-eligibility.service.js'
 import { paymentMethodBalanceAccess } from './payment.service.js'
@@ -11,8 +12,8 @@ import { paymentMethodBalanceAccess } from './payment.service.js'
 function createPaymentMethodsService(
   connection: Connection,
   dependencies: {
-    access: ReturnType<typeof paymentMethodAccess>
-    order: ReturnType<typeof paymentMethodOrderAccess>
+    access: PaymentMethodAccess
+    order: PaymentMethodOrderAccess
     settings(session: ClientSession): Promise<unknown>
     verified?: (session: ClientSession) => Promise<unknown>
   },

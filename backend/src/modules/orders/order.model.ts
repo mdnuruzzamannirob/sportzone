@@ -1,14 +1,14 @@
-import { ApiError } from '../../shared/errors/app-error.js'
-import { Schema, type Types, type Connection } from 'mongoose'
+import { type Connection, Schema, type Types } from 'mongoose'
 import type { z } from 'zod'
-import type { quoteLine, quoteTotals, quoteCouponSnapshot } from '../checkout/checkout.schema.js'
-import type { deliveryDeadlineBasis } from './delivery-deadline.schema.js'
 import {
   integerField,
   mutableSchemaOptions,
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
-import { fulfillmentStatus, fulfillmentHold, assertFulfillmentTransition } from './order.schema.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+import type { quoteCouponSnapshot, quoteLine, quoteTotals } from '../checkout/checkout.schema.js'
+import type { deliveryDeadlineBasis } from './delivery-deadline.schema.js'
+import { assertFulfillmentTransition, fulfillmentHold, fulfillmentStatus } from './order.schema.js'
 
 const embedded = {
   _id: false,
@@ -623,5 +623,5 @@ function orderModels(connection: Connection) {
   }
 }
 
+export type { Order, OrderItem, OrderItemBalance }
 export { orderModels }
-export type { OrderItem, Order, OrderItemBalance }

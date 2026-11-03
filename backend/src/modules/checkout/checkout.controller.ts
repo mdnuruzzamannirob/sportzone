@@ -1,16 +1,16 @@
 import type { RequestHandler } from 'express'
-import { ApiError } from '../../shared/errors/app-error.js'
-import type { createCheckoutIntentService, createCheckoutQuoteService } from './checkout.service.js'
-import { checkoutSubmitInput } from './checkout.schema.js'
-import { checkoutSubmitResult } from './checkout-intent.schema.js'
 import { z } from 'zod'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import { readContextCookie } from '../auth/sessions/browser-security.service.js'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
+import type { SessionCookies } from '../auth/auth.public.js'
+import { checkoutSubmitInput } from './checkout.schema.js'
+import type { createCheckoutIntentService, createCheckoutQuoteService } from './checkout.service.js'
+import { checkoutSubmitResult } from './checkout-intent.schema.js'
 
 function createCheckoutController(
   service: Pick<ReturnType<typeof createCheckoutQuoteService>, 'create'>,
+  cookies: SessionCookies,
 ) {
   const postCheckoutQuotes: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.query)
@@ -23,8 +23,8 @@ function createCheckoutController(
       await service.create(
         {
           customerPresent,
-          customerToken: readSessionCookie(cookie, 'customer'),
-          contextToken: readContextCookie(cookie, 'storefront'),
+          customerToken: cookies.readSessionCookie(cookie, 'customer'),
+          contextToken: cookies.readContextCookie(cookie, 'storefront'),
           csrfToken: req.get('X-CSRF-Token'),
         },
         req.body,
@@ -47,8 +47,8 @@ function createCheckoutController(
       const result = await submission.submitWithOutcome(
         {
           customerPresent,
-          customerToken: readSessionCookie(cookie, 'customer'),
-          contextToken: readContextCookie(cookie, 'storefront'),
+          customerToken: cookies.readSessionCookie(cookie, 'customer'),
+          contextToken: cookies.readContextCookie(cookie, 'storefront'),
           csrfToken: req.get('X-CSRF-Token'),
         },
         input,

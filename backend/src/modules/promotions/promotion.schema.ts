@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { couponTerms, pricingInput } from './pricing.schema.js'
 import { paginationSchema } from '../../shared/pagination.js'
+import { couponTerms, pricingInput } from './pricing.schema.js'
 
 const couponId = z.string().regex(/^[a-f0-9]{24}$/)
 
@@ -193,17 +193,17 @@ const couponHistory = z.strictObject({
 
 export { parseRevision as parseCouponRevision } from '../../shared/preconditions.js'
 export {
-  couponInput,
-  couponPatch,
-  couponDeactivate,
-  couponParams,
-  couponListQuery,
-  couponHistoryQuery,
   couponAdmin,
-  couponHistory,
   couponCode,
-  couponState,
+  couponDeactivate,
   couponEligibilityInput,
+  couponHistory,
+  couponHistoryQuery,
+  couponInput,
+  couponListQuery,
+  couponParams,
+  couponPatch,
   couponPreviewInput,
   couponPreviewResult,
+  couponState,
 }

@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { complaintModel } from './support.model.js'
 
@@ -146,9 +146,9 @@ async function upgradeComplaintPersistence(connection: Connection) {
 }
 
 export {
-  verifyComplaintPersistence,
-  initializeComplaintPersistence,
-  upgradeComplaintPersistence,
-  orderComplaintValidator,
   complaintValidator,
+  initializeComplaintPersistence,
+  orderComplaintValidator,
+  upgradeComplaintPersistence,
+  verifyComplaintPersistence,
 }

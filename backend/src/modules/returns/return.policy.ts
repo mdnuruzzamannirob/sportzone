@@ -1,13 +1,14 @@
 import type { ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
-import type { OrderPrincipal } from '../auth/checkout-access.service.js'
-import type { claimEligibilityOrderAccess } from '../orders/order.service.js'
+import type { OrderPrincipal } from '../auth/auth.public.js'
+import type { ClaimEligibilityOrderAccess } from '../orders/order.public.js'
+
 import { claimAuthority, claimCommand, claimText } from './return.schema.js'
 
 // Private composition only. Policy is a protected authority, never request-body data.
 function createReturnEligibilityService(
-  order: ReturnType<typeof claimEligibilityOrderAccess>,
+  order: ClaimEligibilityOrderAccess,
   policy: (
     session: ClientSession,
     input: ReturnType<typeof claimCommand.parse> & {

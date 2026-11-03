@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { createDeclaredIndexes, verifyDeclaredIndexes } from '../../../shared/database/indexes.js'
 import { refundAttemptModel } from './refund-attempt.model.js'
 
@@ -176,7 +176,7 @@ async function initializeRefundAttemptPersistence(connection: Connection) {
 }
 
 export {
-  verifyRefundAttemptPersistence,
   initializeRefundAttemptPersistence,
   refundAttemptValidator,
+  verifyRefundAttemptPersistence,
 }

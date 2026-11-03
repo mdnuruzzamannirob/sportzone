@@ -43,4 +43,4 @@ const cartMergeResponse = cartResponse.extend({
     .max(100),
 })
 
-export { variantParams, cartQuantity, cartResponse, cartMerge, cartMergeResponse }
+export { cartMerge, cartMergeResponse, cartQuantity, cartResponse, variantParams }

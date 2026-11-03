@@ -1,12 +1,6 @@
 import { z } from 'zod'
-import { fulfillmentStatus, orderId } from './order.schema.js'
-
-const lifecycleText = z
-  .string()
-  .trim()
-  .min(1)
-  .max(2000)
-  .refine((v) => [...v].every((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127))
+import { singleLineText as lifecycleText, resourceId as orderId } from '../../shared/validation.js'
+import { fulfillmentStatus } from './order.schema.js'
 
 const lifecycleInput = z.strictObject({
   to: fulfillmentStatus,
@@ -24,4 +18,4 @@ const lifecycleResult = z.strictObject({
   deliveredAt: z.iso.datetime().optional(),
 })
 
-export { lifecycleText, lifecycleInput, lifecycleResult }
+export { lifecycleInput, lifecycleResult, lifecycleText }

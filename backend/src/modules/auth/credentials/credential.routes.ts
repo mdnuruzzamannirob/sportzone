@@ -1,18 +1,18 @@
-import { createCredentialController } from './credential.controller.js'
-import { localAuthRateLimit } from '../sessions/auth-throttle.service.js'
-import { Router, type RequestHandler } from 'express'
+import { type RequestHandler, Router } from 'express'
 import { z } from 'zod'
 import { parseInput } from '../../../shared/middleware/validate.js'
+import { respond } from '../../../shared/responses.js'
+import type { RecoveryService } from '../recovery/password-recovery.service.js'
+import { localAuthRateLimit } from '../sessions/auth-throttle.service.js'
 import {
   type BrowserSecurity,
   logoutProtection,
   readContextCookie,
 } from '../sessions/browser-security.service.js'
-import type { CredentialService } from './credential.service.js'
-import type { SessionService } from '../sessions/session.service.js'
-import { respond } from '../../../shared/responses.js'
-import type { RecoveryService } from '../recovery/password-recovery.service.js'
 import { createSessionHttp } from '../sessions/session.http.js'
+import type { SessionService } from '../sessions/session.service.js'
+import { createCredentialController } from './credential.controller.js'
+import type { CredentialService } from './credential.service.js'
 
 function createCustomerCredentialRoutes(
   service: CredentialService,
@@ -80,4 +80,4 @@ function createAdminCredentialRoutes(
   return router
 }
 
-export { createCustomerCredentialRoutes, createAdminCredentialRoutes }
+export { createAdminCredentialRoutes, createCustomerCredentialRoutes }

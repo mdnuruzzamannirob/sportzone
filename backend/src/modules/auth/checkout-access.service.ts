@@ -1,21 +1,14 @@
 import { createHash } from 'node:crypto'
 import type { ClientSession } from 'mongoose'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { CustomerAccountAccess, CustomerProfile } from './account-access.service.js'
+import type { CustomerAccountAccess } from './account-access.service.js'
+import type {
+  CheckoutCredentials,
+  CheckoutPrincipal,
+  OrderPrincipal,
+  PaymentInitiationCredentials,
+} from './auth.public.js'
 import type { BrowserSecurity } from './sessions/browser-security.service.js'
-
-type CheckoutCredentials = {
-  customerPresent: boolean
-  customerToken?: string | undefined
-  contextToken?: string | undefined
-  csrfToken?: string | undefined
-}
-
-type CheckoutPrincipal = {
-  scopeType: 'customer' | 'guest_context'
-  scopeKeyHash: string
-  profile?: CustomerProfile
-}
 
 function checkoutAccess(customers: CustomerAccountAccess, security: BrowserSecurity) {
   return {
@@ -79,13 +72,6 @@ function paymentMethodAccess(
       )
     },
   }
-}
-
-type PaymentInitiationCredentials = {
-  customerPresent: boolean
-  customerToken?: string | undefined
-  guestToken?: string | undefined
-  csrfToken?: string | undefined
 }
 
 function paymentInitiationAuthAccess(
@@ -156,17 +142,6 @@ function paymentInitiationAuthAccess(
     },
   }
 }
-
-type OrderPrincipal =
-  | {
-      kind: 'customer'
-      userId: string
-    }
-  | {
-      kind: 'guest_order'
-      guestSessionId: string
-      orderId: string
-    }
 
 function orderScopeAccess(
   customers: CustomerAccountAccess,
@@ -277,5 +252,5 @@ function orderScopeAccess(
   }
 }
 
-export { checkoutAccess, paymentMethodAccess, paymentInitiationAuthAccess, orderScopeAccess }
-export type { CheckoutCredentials, CheckoutPrincipal, PaymentInitiationCredentials, OrderPrincipal }
+export type { CheckoutCredentials, CheckoutPrincipal, OrderPrincipal, PaymentInitiationCredentials }
+export { checkoutAccess, orderScopeAccess, paymentInitiationAuthAccess, paymentMethodAccess }

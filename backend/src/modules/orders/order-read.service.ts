@@ -1,29 +1,32 @@
 import type { ClientSession, Connection, HydratedDocument } from 'mongoose'
-import type { AdminAccountAccess, CustomerAccountAccess } from '../auth/auth.public.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { pageMeta } from '../../shared/pagination.js'
+import { resourceId as orderId } from '../../shared/validation.js'
+import type {
+  AdminAccountAccess,
+  CustomerAccountAccess,
+  OrderPrincipal,
+  OrderScopeAccess,
+  PaymentInitiationCredentials,
+} from '../auth/auth.public.js'
+import type { OrderPolicySnapshotAccess } from '../checkout/checkout.public.js'
+import type { CustomerPaymentSummaryAccess } from '../payments/payment.public.js'
+
+import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
+import { type Order, orderModels } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+
 import {
-  adminOrderQuery,
   adminOrderDetail,
+  adminOrderQuery,
+  customerDeliveryEvents,
+  customerOrderDetail,
+  customerPaymentHistory,
   orderReadQuery,
   orderReadSummary,
   orderStatusView,
-  customerOrderDetail,
-  customerDeliveryEvents,
-  customerPaymentHistory,
 } from './order-read.schema.js'
-import type {
-  orderScopeAccess,
-  PaymentInitiationCredentials,
-  OrderPrincipal,
-} from '../auth/checkout-access.service.js'
-import type { customerPaymentSummaryAccess } from '../payments/payment.service.js'
-import type { orderPolicySnapshotAccess } from '../checkout/checkout.service.js'
-import { orderModels, type Order } from './order.model.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { orderId } from './order.schema.js'
-import { createDeliveryDeadlineService } from './delivery-deadline.service.js'
-import { pageMeta } from '../../shared/pagination.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { parseInput } from '../../shared/middleware/validate.js'
 
 const orderOwnerFilter = (id: string, principal: OrderPrincipal) => {
   if (principal.kind === 'guest_order' && principal.orderId !== id) throw new ApiError('NOT_FOUND')
@@ -33,9 +36,9 @@ const orderOwnerFilter = (id: string, principal: OrderPrincipal) => {
 function createOrderReadService(
   connection: Connection,
   customers: CustomerAccountAccess,
-  access: ReturnType<typeof orderScopeAccess>,
-  payment: ReturnType<typeof customerPaymentSummaryAccess>,
-  policies: ReturnType<typeof orderPolicySnapshotAccess>,
+  access: OrderScopeAccess,
+  payment: CustomerPaymentSummaryAccess,
+  policies: OrderPolicySnapshotAccess,
   clock: () => Date = () => new Date(),
   administrative?: {
     accounts: AdminAccountAccess

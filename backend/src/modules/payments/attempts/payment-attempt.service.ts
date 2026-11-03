@@ -1,12 +1,13 @@
 import { randomBytes } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
-import { paymentModel } from '../payment.model.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+
 import { paymentRecordModels } from '../collections/payment-record.model.js'
 import { verifyPaymentRecordPersistence } from '../collections/payment-record.persistence.js'
-import { prepareAttemptInput, attemptAllocation } from './payment-attempt.schema.js'
-import { createAuditWriter } from '../../audit/audit.service.js'
+import { paymentModel } from '../payment.model.js'
+import { attemptAllocation, prepareAttemptInput } from './payment-attempt.schema.js'
 
 type PaymentAttemptAccess = {
   // Reauthorize exact order/principal for both new creation and replay in THIS transaction.
@@ -24,11 +25,12 @@ type PaymentAttemptAccess = {
 function createPaymentAttemptService(
   connection: Connection,
   access: PaymentAttemptAccess,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   const payments = paymentModel(connection),
     { attempts } = paymentRecordModels(connection),
-    audit = createAuditWriter(connection)
+    audit = auditAccess.write
   const view = (row: InstanceType<typeof attempts>) => ({
     id: row._id.toHexString(),
     orderId: row.orderId.toHexString(),
@@ -153,5 +155,5 @@ function createPaymentAttemptService(
   }
 }
 
-export { createPaymentAttemptService }
 export type { PaymentAttemptAccess }
+export { createPaymentAttemptService }

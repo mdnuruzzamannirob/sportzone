@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { orderId } from './order.schema.js'
-import { lifecycleText } from './order-lifecycle.schema.js'
+import { singleLineText as lifecycleText, resourceId as orderId } from '../../shared/validation.js'
 
 const exceptionType = z.enum(['delay', 'failed_attempt', 'final_non_delivery'])
 
@@ -53,10 +52,10 @@ const exceptionView = z.strictObject({
 })
 
 export {
-  exceptionType,
   exceptionContact,
-  exceptionInput,
   exceptionDisposition,
+  exceptionInput,
   exceptionResolution,
+  exceptionType,
   exceptionView,
 }

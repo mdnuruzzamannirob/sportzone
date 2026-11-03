@@ -1,10 +1,9 @@
 import { z } from 'zod'
-import { text } from '../catalog/catalog.schema.js'
-import { checkoutCommercialSnapshot } from '../checkout/checkout.schema.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import { resourceId as orderId, boundedText as text } from '../../shared/validation.js'
 
-const orderId = z.string().regex(/^[a-f0-9]{24}$/)
+import { checkoutCommercialSnapshot } from '../checkout/checkout.schema.js'
 
 const fulfillmentStatus = z.enum([
   'pending',
@@ -79,11 +78,11 @@ const initialOrderResult = z.strictObject({
 
 export {
   assertFulfillmentTransition,
-  orderId,
-  fulfillmentStatus,
   fulfillmentHold,
+  fulfillmentStatus,
+  initialOrderResult,
   orderCreateCommand,
   orderCreationProof,
+  orderId,
   transitionRequest,
-  initialOrderResult,
 }

@@ -1,7 +1,7 @@
 import type { ClientSession } from 'mongoose'
-import type { createCatalogService } from '../catalog/catalog.service.js'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
+import type { CatalogSelections } from '../catalog/catalog.public.js'
 import { pricingInput, pricingRequest } from './pricing.schema.js'
 
 const maximum = BigInt(Number.MAX_SAFE_INTEGER)
@@ -91,9 +91,7 @@ function calculatePricing(raw: unknown) {
   return result
 }
 
-function createPricingService(
-  catalog: Pick<ReturnType<typeof createCatalogService>, 'cartSelections'>,
-) {
+function createPricingService(catalog: Pick<CatalogSelections, 'cartSelections'>) {
   return {
     async quote(raw: unknown, session?: ClientSession) {
       const input = parseInput(pricingRequest, raw)

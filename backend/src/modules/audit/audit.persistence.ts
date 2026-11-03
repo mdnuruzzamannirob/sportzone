@@ -57,4 +57,4 @@ async function verifyAuditPersistence(connection: Connection) {
   await verifyDeclaredIndexes(auditModel(connection))
 }
 
-export { initializeAuditPersistence, verifyAuditPersistence, auditValidator }
+export { auditValidator, initializeAuditPersistence, verifyAuditPersistence }

@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { parseInput } from '../../shared/middleware/validate.js'
 import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
 
 const money = z.int().nonnegative().max(Number.MAX_SAFE_INTEGER)
 

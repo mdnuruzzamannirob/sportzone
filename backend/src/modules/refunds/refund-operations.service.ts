@@ -1,34 +1,35 @@
+import { createHash } from 'node:crypto'
+import type { ClientSession, Connection } from 'mongoose'
+import { z } from 'zod'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import { pageMeta } from '../../shared/pagination.js'
+import { refundStatusTimelineAccess } from '../audit/audit.service.js'
+import type { AdminAccountAccess } from '../auth/auth.public.js'
+import type { RefundFundingAccess } from '../payments/payment.public.js'
+
+import type { createRefundReservationService } from './obligations/refund-reservation.service.js'
+import { refundAttemptModel } from './payouts/refund-attempt.model.js'
+import { verifyRefundAttemptPersistence } from './payouts/refund-attempt.persistence.js'
+import type { createRefundDispatchService } from './payouts/refund-dispatch.service.js'
+import type { createRefundRecoveryService } from './payouts/refund-recovery.service.js'
+import { refundModel } from './refund.model.js'
+import { verifyCorrectionPersistence } from './refund.persistence.js'
 import {
   refundAdminQuery as query,
-  refundAdminView,
   refundAdminDetail,
+  refundAdminView,
+  refundPayoutInput,
   refundReasonInput,
   refundReviewInput,
-  refundPayoutInput,
 } from './refund-api.schema.js'
-import { refundStatusTimelineAccess } from '../audit/audit.service.js'
-import type { createRefundRecoveryService } from './payouts/refund-recovery.service.js'
-import { createHash } from 'node:crypto'
-import type { Connection, ClientSession } from 'mongoose'
-import { z } from 'zod'
-import type { AdminAccountAccess } from '../auth/auth.public.js'
-import type { refundFundingAccess } from '../payments/payment.service.js'
-import type { createRefundReservationService } from './obligations/refund-reservation.service.js'
-import type { createRefundDispatchService } from './payouts/refund-dispatch.service.js'
-import { refundModel } from './refund.model.js'
-import { refundAttemptModel } from './payouts/refund-attempt.model.js'
-import { verifyCorrectionPersistence } from './refund.persistence.js'
-import { verifyRefundAttemptPersistence } from './payouts/refund-attempt.persistence.js'
-import { parseInput } from '../../shared/middleware/validate.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { pageMeta } from '../../shared/pagination.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
 
 function createRefundOperationsService(
   connection: Connection,
   admins: AdminAccountAccess,
-  funding: ReturnType<typeof refundFundingAccess>,
+  funding: RefundFundingAccess,
   reservation: ReturnType<typeof createRefundReservationService>,
   dispatch?: ReturnType<typeof createRefundDispatchService>,
   recovery?: ReturnType<typeof createRefundRecoveryService>,

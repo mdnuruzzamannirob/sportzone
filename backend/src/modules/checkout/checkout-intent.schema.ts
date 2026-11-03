@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { parseInput } from '../../shared/middleware/validate.js'
-import { checkoutSubmitInput, quoteId } from './checkout.schema.js'
 import { fulfillmentStatus } from '../orders/order.schema.js'
+import { checkoutSubmitInput, quoteId } from './checkout.schema.js'
 
 // Same bounded opaque-key convention as existing replay-sensitive commands. Never persist raw keys.
 const checkoutIdempotencyKey = z
@@ -71,11 +71,11 @@ const checkoutOrderSummary = z.strictObject({
 const checkoutSubmitResult = z.strictObject({ order: checkoutOrderSummary })
 
 export {
-  checkoutKeyHash,
-  checkoutSubmissionFingerprint,
   checkoutIdempotencyKey,
   checkoutIntentScope,
+  checkoutKeyHash,
   checkoutOrderOutcome,
   checkoutOrderSummary,
+  checkoutSubmissionFingerprint,
   checkoutSubmitResult,
 }

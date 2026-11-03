@@ -38,5 +38,5 @@ type RefundOutcomeProof = z.output<typeof refundOutcomeProof>
 
 type RefundOutcomeVerifier = (input: { refundId: string; attemptId: string }) => Promise<unknown>
 
-export { refundOutcomeProof }
 export type { RefundOutcomeProof, RefundOutcomeVerifier }
+export { refundOutcomeProof }

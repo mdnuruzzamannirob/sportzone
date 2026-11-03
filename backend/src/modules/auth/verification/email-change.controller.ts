@@ -1,8 +1,8 @@
 import type { RequestHandler } from 'express'
 import { respond } from '../../../shared/responses.js'
-import type { EmailChangeService } from './email-change.service.js'
 import { createSessionHttp, readSessionCookie } from '../sessions/session.http.js'
 import type { SessionService } from '../sessions/session.service.js'
+import type { EmailChangeService } from './email-change.service.js'
 
 function createEmailChangeController(service: EmailChangeService, sessions: SessionService) {
   const cookies = createSessionHttp(sessions)

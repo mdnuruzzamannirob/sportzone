@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import { verifyDeclaredIndexes } from '../../shared/database/indexes.js'
 import { inventoryMovementModel, inventoryReservationModel } from './inventory.model.js'
 
@@ -215,10 +215,10 @@ async function initializeAllocationPersistence(connection: Connection) {
 }
 
 export {
-  verifyInventoryPersistence,
-  initializeInventoryPersistence,
-  verifyAllocationPersistence,
   initializeAllocationPersistence,
+  initializeInventoryPersistence,
   inventoryMovementValidator,
   inventoryReservationValidator,
+  verifyAllocationPersistence,
+  verifyInventoryPersistence,
 }

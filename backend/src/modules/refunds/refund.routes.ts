@@ -1,21 +1,21 @@
+import { type RequestHandler, Router } from 'express'
+import type { BrowserSecurity, SessionCookies, SessionHttp } from '../auth/auth.public.js'
+import type { createRefundReservationService } from './obligations/refund-reservation.service.js'
 import {
+  createRefundController,
   createRefundHistoryController,
   createRefundRequestController,
-  createRefundController,
 } from './refund.controller.js'
-import { Router, type RequestHandler } from 'express'
-import type { BrowserSecurity } from '../auth/sessions/browser-security.service.js'
-import { createSessionHttp } from '../auth/sessions/session.http.js'
 import type { createRefundHistoryService } from './refund-history.service.js'
-import type { createRefundReservationService } from './obligations/refund-reservation.service.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
+
 import type { createRefundOperationsService } from './refund-operations.service.js'
 
 function createRefundHistoryRoutes(
   service: ReturnType<typeof createRefundHistoryService>,
   security: BrowserSecurity,
+  cookies: SessionCookies,
 ) {
-  const controller = createRefundHistoryController(service)
+  const controller = createRefundHistoryController(service, cookies)
 
   const router = Router(),
     cors = security.cors('storefront')
@@ -33,8 +33,9 @@ function createRefundRequestRoutes(
   security: BrowserSecurity,
   throttle: RequestHandler,
   origin: string,
+  cookies: SessionCookies,
 ) {
-  const controller = createRefundRequestController(service, origin)
+  const controller = createRefundRequestController(service, origin, cookies)
 
   const router = Router(),
     cors = security.cors('storefront'),
@@ -47,13 +48,13 @@ function createRefundRequestRoutes(
 function createRefundRoutes(
   service: ReturnType<typeof createRefundOperationsService>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createRefundController(service)
+  const controller = createRefundController(service, sessionHttp)
 
   const router = Router(),
     cors = security.cors('admin'),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
 
   for (const path of [
     '/admin/refunds',

@@ -1,5 +1,5 @@
-import type { Connection } from 'mongoose'
 import { isDeepStrictEqual } from 'node:util'
+import type { Connection } from 'mongoose'
 import type { NotificationModel } from './notification.model.js'
 
 function createNotificationPersistence(connection: Connection, model: NotificationModel) {
@@ -739,17 +739,17 @@ const registrationNotificationValidator = {
 }
 
 export {
-  createNotificationPersistence,
-  legacyRegistrationNotificationValidator,
-  foundationNotificationValidator,
-  passwordResetNotificationValidator,
-  emailChangeNotificationValidator,
   adminResetNotificationValidator,
-  orderReceivedNotificationValidator,
-  guestNotificationValidator,
-  paymentNotificationValidator,
   commerceNotificationValidator,
-  returnNotificationValidator,
+  createNotificationPersistence,
+  emailChangeNotificationValidator,
+  foundationNotificationValidator,
+  guestNotificationValidator,
+  legacyRegistrationNotificationValidator,
+  orderReceivedNotificationValidator,
+  passwordResetNotificationValidator,
+  paymentNotificationValidator,
   refundNotificationValidator,
   registrationNotificationValidator,
+  returnNotificationValidator,
 }

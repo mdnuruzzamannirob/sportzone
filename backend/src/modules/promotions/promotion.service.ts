@@ -1,32 +1,36 @@
-import { isDeepStrictEqual } from 'node:util'
 import { createHash, randomUUID } from 'node:crypto'
-import { Types, type ClientSession, type Connection, type HydratedDocument } from 'mongoose'
+import { isDeepStrictEqual } from 'node:util'
+import { type ClientSession, type Connection, type HydratedDocument, Types } from 'mongoose'
+import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { pageMeta } from '../../shared/pagination.js'
-import type { AdminAccountAccess } from '../auth/auth.public.js'
-import { couponModels, type CouponRedemption } from './promotion.model.js'
+import type {
+  AdminAccountAccess,
+  CheckoutAccess,
+  CheckoutCredentials,
+} from '../auth/auth.public.js'
+import type { CatalogCheckoutAccess } from '../catalog/catalog.public.js'
+
+import type { CheckoutDeliveryAccess } from '../delivery/delivery.public.js'
+import { calculatePricing } from './pricing.js'
+import type { pricingInput } from './pricing.schema.js'
+import { type CouponRedemption, couponModels } from './promotion.model.js'
 import { verifyCouponPersistence } from './promotion.persistence.js'
 import {
   couponAdmin,
-  couponInput,
-  couponPatch,
-  couponParams,
   couponDeactivate,
-  couponListQuery,
-  couponHistoryQuery,
-  couponHistory,
-  parseCouponRevision,
   couponEligibilityInput,
+  couponHistory,
+  couponHistoryQuery,
+  couponInput,
+  couponListQuery,
+  couponParams,
+  couponPatch,
   couponPreviewInput,
   couponPreviewResult,
+  parseCouponRevision,
 } from './promotion.schema.js'
-import type { checkoutAccess, CheckoutCredentials } from '../auth/checkout-access.service.js'
-import type { catalogCheckoutAccess } from '../catalog/catalog.service.js'
-import type { CheckoutDeliveryAccess } from '../delivery/delivery.public.js'
-import { z } from 'zod'
-import type { pricingInput } from './pricing.schema.js'
-import { calculatePricing } from './pricing.js'
 
 function createCouponAdminService(
   connection: Connection,
@@ -466,8 +470,8 @@ function couponQuoteAccess(connection: Connection) {
 // Advisory only: authoritative prices/eligibility, no hold or redemption write.
 function createCouponPreviewService(
   connection: Connection,
-  access: ReturnType<typeof checkoutAccess>,
-  catalog: ReturnType<typeof catalogCheckoutAccess>,
+  access: CheckoutAccess,
+  catalog: CatalogCheckoutAccess,
   delivery: CheckoutDeliveryAccess,
   clock: () => Date = () => new Date(),
 ) {
@@ -877,12 +881,12 @@ function couponGenerationAccess(connection: Connection) {
   }
 }
 
+export type { CouponOrderAccess }
 export {
+  couponGenerationAccess,
+  couponQuoteAccess,
   createCouponAdminService,
   createCouponAllocationService,
-  couponGenerationAccess,
-  evaluateCouponEligibility,
-  couponQuoteAccess,
   createCouponPreviewService,
+  evaluateCouponEligibility,
 }
-export type { CouponOrderAccess }

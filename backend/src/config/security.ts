@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { ConfigurationError } from '../shared/errors/configuration-error.js'
 import { createEncryptionKeyring, type EncryptionKeyring } from '../shared/crypto.js'
+import { ConfigurationError } from '../shared/errors/configuration-error.js'
 
 const securitySecretSchema = z
   .string()
@@ -233,16 +233,16 @@ function loadGuestAccessOptions(environment: NodeJS.ProcessEnv): GuestAccessOpti
 const loadEmailVerificationOptions = (environment: NodeJS.ProcessEnv) =>
   loadProofOptions(environment, 'EMAIL_VERIFICATION')
 
+export type { BrowserSecurityOptions, GuestAccessOptions, RecoveryOptions, SessionOptions }
 export {
-  validateSessionOptions,
-  loadSessionOptions,
-  validateBrowserSecurityOptions,
-  loadBrowserSecurityOptions,
-  loadRecoveryOptions,
-  loadEmailChangeOptions,
   loadAdminRecoveryOptions,
-  loadGuestAccessOptions,
+  loadBrowserSecurityOptions,
+  loadEmailChangeOptions,
   loadEmailVerificationOptions,
+  loadGuestAccessOptions,
+  loadRecoveryOptions,
+  loadSessionOptions,
   securitySecretSchema,
+  validateBrowserSecurityOptions,
+  validateSessionOptions,
 }
-export type { SessionOptions, BrowserSecurityOptions, RecoveryOptions, GuestAccessOptions }

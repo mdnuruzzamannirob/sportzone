@@ -1,10 +1,10 @@
-import { Schema, type Connection, type Types } from 'mongoose'
+import { type Connection, Schema, type Types } from 'mongoose'
+import type { z } from 'zod'
 import {
   integerField,
   mutableSchemaOptions,
   optionalObjectIdField,
 } from '../../shared/database/schema.js'
-import type { z } from 'zod'
 import type { checkoutCommercialSnapshot } from './checkout.schema.js'
 
 const embedded = { _id: false, strict: 'throw', versionKey: false, minimize: false } as const
@@ -276,5 +276,5 @@ function checkoutQuoteModel(connection: Connection) {
     : connection.model<CheckoutQuote>('CheckoutQuote', schema, 'checkoutQuotes')
 }
 
-export { checkoutQuoteModel }
 export type { CheckoutQuote }
+export { checkoutQuoteModel }

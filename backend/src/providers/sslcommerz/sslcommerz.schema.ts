@@ -11,7 +11,7 @@ const text = (max: number) =>
         value === value.trim() &&
         [...value].every((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127),
     )
-export const reference = (max: number) => text(max)
+const reference = (max: number) => text(max)
 const apiOrigin = z
   .string()
   .max(160)
@@ -40,8 +40,8 @@ const optionsSchema = z
     timeoutMs: z.int().min(1).max(60000),
   })
   .refine((value) => value.mode === (value.appEnv === 'production' ? 'live' : 'sandbox'))
-export type SslcommerzOptions = z.infer<typeof optionsSchema>
-export function validateSslcommerzOptions(raw: unknown): Readonly<SslcommerzOptions> {
+type SslcommerzOptions = z.infer<typeof optionsSchema>
+function validateSslcommerzOptions(raw: unknown): Readonly<SslcommerzOptions> {
   const parsed = optionsSchema.safeParse(raw)
   if (!parsed.success) throw new ConfigurationError(['sslcommerz_configuration'])
   return Object.freeze(parsed.data)
@@ -54,7 +54,7 @@ const address = z.strictObject({
   postcode: text(30),
   country: z.literal('Bangladesh'),
 })
-export const initiationInput = z.strictObject({
+const initiationInput = z.strictObject({
   tranId: reference(30),
   amountPoisha: z.int().min(1000).max(50000000),
   // This key must be supplied by verified merchant/channel composition, never a browser mapping.
@@ -65,11 +65,11 @@ export const initiationInput = z.strictObject({
   productName: text(255),
   productCategory: text(50),
 })
-export function bdtDecimal(poisha: number) {
+function bdtDecimal(poisha: number) {
   if (!Number.isSafeInteger(poisha) || poisha < 0) throw new Error('Invalid integer amount')
   return `${Math.floor(poisha / 100)}.${String(poisha % 100).padStart(2, '0')}`
 }
-export const decimalPoisha = z
+const decimalPoisha = z
   .string()
   .regex(/^(0|[1-9]\d{0,13})(\.\d{1,2})?$/)
   .transform((value, ctx) => {
@@ -83,7 +83,7 @@ export const decimalPoisha = z
   })
 const optionalReference = (max: number) => z.union([reference(max), z.literal('')]).optional()
 // Unknown provider fields (including card/customer data) are stripped, never returned or logged.
-export const providerRecord = z
+const providerRecord = z
   .object({
     status: z.enum([
       'VALID',
@@ -128,20 +128,20 @@ export const providerRecord = z
         value.tran_date !== undefined &&
         value.risk_level !== undefined),
   )
-export const sessionAcceptance = z.object({
+const sessionAcceptance = z.object({
   status: z.literal('SUCCESS'),
   sessionkey: reference(50),
   GatewayPageURL: z.string().max(255),
 })
-export const sessionFailure = z.object({
+const sessionFailure = z.object({
   status: z.literal('FAILED'),
   sessionkey: z.union([z.literal(''), z.null()]).optional(),
   GatewayPageURL: z.union([z.literal(''), z.null()]).optional(),
 })
-export const transactionQuery = z.strictObject({ tranId: reference(30) })
-export const sessionQuery = z.strictObject({ sessionKey: reference(50) })
-export const validationQuery = z.strictObject({ validationId: reference(50) })
-export const refundInitiationInput = z.strictObject({
+const transactionQuery = z.strictObject({ tranId: reference(30) })
+const sessionQuery = z.strictObject({ sessionKey: reference(50) })
+const validationQuery = z.strictObject({ validationId: reference(50) })
+const refundInitiationInput = z.strictObject({
   bankTranId: reference(80),
   refundTransId: reference(30),
   amountPoisha: z.int().min(1).max(9999999999),
@@ -149,17 +149,17 @@ export const refundInitiationInput = z.strictObject({
   referenceId: reference(50).optional(),
 })
 // Provider fields beyond this allowlist never cross the transport boundary.
-export const refundInitiationResponse = z.object({
+const refundInitiationResponse = z.object({
   APIConnect: z.literal('DONE'),
   status: z.enum(['success', 'processing']),
   bank_tran_id: reference(80),
   refund_ref_id: reference(50),
 })
-export const refundStatusQuery = z.strictObject({
+const refundStatusQuery = z.strictObject({
   refundRefId: reference(50),
   bankTranId: reference(80),
 })
-export const refundStatusResponse = z.object({
+const refundStatusResponse = z.object({
   APIConnect: z.literal('DONE'),
   store_id: reference(30).optional(),
   status: z.enum(['refunded', 'processing', 'cancelled']),
@@ -167,14 +167,35 @@ export const refundStatusResponse = z.object({
   refund_ref_id: reference(50),
   refunded_on: reference(32).optional(),
 })
-export const transactionResponse = z
+const transactionResponse = z
   .object({
     APIConnect: z.literal('DONE'),
     no_of_trans_found: z.int().min(0).max(100),
     element: z.array(providerRecord).max(100),
   })
   .refine((value) => value.no_of_trans_found === value.element.length)
-export const sessionResponse = providerRecord.safeExtend({
+const sessionResponse = providerRecord.safeExtend({
   APIConnect: z.literal('DONE').optional(),
   sessionkey: reference(50),
 })
+
+export type { SslcommerzOptions }
+export {
+  bdtDecimal,
+  decimalPoisha,
+  initiationInput,
+  providerRecord,
+  reference,
+  refundInitiationInput,
+  refundInitiationResponse,
+  refundStatusQuery,
+  refundStatusResponse,
+  sessionAcceptance,
+  sessionFailure,
+  sessionQuery,
+  sessionResponse,
+  transactionQuery,
+  transactionResponse,
+  validateSslcommerzOptions,
+  validationQuery,
+}

@@ -1,32 +1,15 @@
 import { createHash } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
-import { z } from 'zod'
-import { ApiError } from '../../../shared/errors/app-error.js'
+import { type ClientSession, type Connection, Types } from 'mongoose'
+import { paymentReconciliationOptions } from '../../../config/payments.js'
 import { inTransaction } from '../../../shared/database/transaction.js'
-import {
-  createAuditWriter,
-  auditOperationReader,
-  paymentReconciliationScheduleAccess,
-} from '../../audit/audit.service.js'
-import { paymentRecordModels } from './payment-record.model.js'
+import { ApiError } from '../../../shared/errors/app-error.js'
+import type { AuditAccess } from '../../audit/audit.public.js'
+import { paymentReconciliationScheduleAccess } from '../../audit/audit.service.js'
 import { paymentInitiationModel } from '../attempts/payment-initiation.model.js'
-import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 import { verifyPaymentInitiationPersistence } from '../attempts/payment-initiation.persistence.js'
 import type { createPaymentProcessingService } from './payment-processing.service.js'
-
-const paymentReconciliationOptions = z
-  .strictObject({
-    batchSize: z.int().min(1).max(100),
-    leaseMs: z.int().min(1000).max(3600000),
-    pollIntervalMs: z.int().min(1000).max(86400000),
-    terminalPollIntervalMs: z.int().min(1000).max(604800000),
-    escalateAfterMs: z.int().min(1000).max(2592000000),
-  })
-  .refine(
-    (value) =>
-      value.terminalPollIntervalMs >= value.pollIntervalMs &&
-      value.escalateAfterMs >= value.pollIntervalMs,
-  )
+import { paymentRecordModels } from './payment-record.model.js'
+import { verifyPaymentRecordPersistence } from './payment-record.persistence.js'
 
 const unresolved = ['created', 'initiated', 'pending', 'uncertain'] as const
 
@@ -37,14 +20,15 @@ function createPaymentReconciliationService(
   processor: ReturnType<typeof createPaymentProcessingService>,
   merchantAccountKey: string,
   raw: unknown,
+  auditAccess: AuditAccess,
   clock: () => Date = () => new Date(),
 ) {
   if (!/^[a-f0-9]{64}$/.test(merchantAccountKey)) throw new Error('Invalid reconciliation merchant')
   const options = paymentReconciliationOptions.parse(raw),
     { attempts, intake } = paymentRecordModels(connection),
     operations = paymentInitiationModel(connection),
-    audit = createAuditWriter(connection, true),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.replay,
+    lookup = auditAccess.lookup
   async function verify() {
     await verifyPaymentRecordPersistence(connection)
     await verifyPaymentInitiationPersistence(connection)

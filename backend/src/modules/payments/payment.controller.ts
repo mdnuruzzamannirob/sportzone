@@ -1,25 +1,23 @@
 import type { RequestHandler } from 'express'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { paymentReturnParams, paymentReturnForm } from './collections/payment-callback.schema.js'
-import type { createPaymentCallbackService } from './collections/payment-callback.service.js'
 import { z } from 'zod'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
-import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
-import type { PaymentInitiationCredentials } from '../auth/checkout-access.service.js'
-import type { createPaymentInitiationService } from './attempts/payment-initiation.service.js'
+import type { PaymentInitiationCredentials, SessionCookies } from '../auth/auth.public.js'
 import {
-  paymentInitiationParams,
   paymentAttemptParams,
   paymentAttemptStatus,
+  paymentInitiationParams,
 } from './attempts/payment-initiation.schema.js'
-import type { createPaymentMatchingService } from './collections/payment-matching.service.js'
+import type { createPaymentInitiationService } from './attempts/payment-initiation.service.js'
+import { paymentReturnForm, paymentReturnParams } from './collections/payment-callback.schema.js'
+import type { createPaymentCallbackService } from './collections/payment-callback.service.js'
 import { matchingId } from './collections/payment-matching.schema.js'
-import type { createPaymentMethodsService } from './payment-methods.service.js'
+import type { createPaymentMatchingService } from './collections/payment-matching.service.js'
 import type { createPaymentMonitorService } from './collections/payment-monitor.service.js'
 import { paymentRiskParams } from './collections/payment-risk.schema.js'
 import type { createPaymentRiskService } from './collections/payment-risk.service.js'
+import type { createPaymentMethodsService } from './payment-methods.service.js'
 
 function createPaymentCallbackController(service: ReturnType<typeof createPaymentCallbackService>) {
   const redirect: RequestHandler = async (req, res) => {
@@ -58,13 +56,14 @@ function createPaymentCallbackController(service: ReturnType<typeof createPaymen
 function createPaymentInitiationController(
   service: ReturnType<typeof createPaymentInitiationService<PaymentInitiationCredentials>>,
   storefrontOrigin: string,
+  cookies: SessionCookies,
 ) {
   const credentials = (req: import('express').Request): PaymentInitiationCredentials => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((part) => part.trim().startsWith('sz_customer_sid=')),
-    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: readGuestCookie(req.get('Cookie')),
+    customerToken: cookies.readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: cookies.readGuestCookie(req.get('Cookie')),
     csrfToken: req.get('X-CSRF-Token'),
   })
   const postOrdersPaymentAttempts: RequestHandler = async (req, res) => {
@@ -88,14 +87,17 @@ function createPaymentInitiationController(
   return { postOrdersPaymentAttempts, getOrdersPaymentAttempts }
 }
 
-function createPaymentMatchingController(service: ReturnType<typeof createPaymentMatchingService>) {
+function createPaymentMatchingController(
+  service: ReturnType<typeof createPaymentMatchingService>,
+  cookies: SessionCookies,
+) {
   const postProviderReceiptsLink: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.query)
     const { intakeId } = parseInput(z.strictObject({ intakeId: matchingId }), req.params)
     respond(
       res,
       await service.link(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         intakeId,
         req.body,
         req.get('Idempotency-Key'),
@@ -106,7 +108,7 @@ function createPaymentMatchingController(service: ReturnType<typeof createPaymen
     parseInput(z.strictObject({}), req.query)
     const { collectionId } = parseInput(z.strictObject({ collectionId: matchingId }), req.params)
     const result = await service.allocate(
-      readSessionCookie(req.get('Cookie'), 'admin'),
+      cookies.readSessionCookie(req.get('Cookie'), 'admin'),
       collectionId,
       req.body,
       req.get('Idempotency-Key'),
@@ -119,7 +121,10 @@ function createPaymentMatchingController(service: ReturnType<typeof createPaymen
   return { postProviderReceiptsLink, postPaymentCollectionsAllocate }
 }
 
-function createPaymentMethodsController(service: ReturnType<typeof createPaymentMethodsService>) {
+function createPaymentMethodsController(
+  service: ReturnType<typeof createPaymentMethodsService>,
+  cookies: SessionCookies,
+) {
   const getCheckoutPaymentMethods: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
     const cookie = req.get('Cookie')
@@ -130,8 +135,8 @@ function createPaymentMethodsController(service: ReturnType<typeof createPayment
           customerPresent: (cookie ?? '')
             .split(';')
             .some((part) => part.trim().startsWith('sz_customer_sid=')),
-          customerToken: readSessionCookie(cookie, 'customer'),
-          guestToken: readGuestCookie(cookie),
+          customerToken: cookies.readSessionCookie(cookie, 'customer'),
+          guestToken: cookies.readGuestCookie(cookie),
         },
         req.query,
       ),
@@ -140,11 +145,14 @@ function createPaymentMethodsController(service: ReturnType<typeof createPayment
   return { getCheckoutPaymentMethods }
 }
 
-function createPaymentMonitorController(service: ReturnType<typeof createPaymentMonitorService>) {
+function createPaymentMonitorController(
+  service: ReturnType<typeof createPaymentMonitorService>,
+  cookies: SessionCookies,
+) {
   const getAdminPayments: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.params)
     const { pagination, ...data } = await service.list(
-      readSessionCookie(req.get('Cookie'), 'admin'),
+      cookies.readSessionCookie(req.get('Cookie'), 'admin'),
       req.query,
     )
     respond(res, data, 200, pagination)
@@ -153,7 +161,11 @@ function createPaymentMonitorController(service: ReturnType<typeof createPayment
     const { paymentId } = parseInput(paymentRiskParams, req.params)
     respond(
       res,
-      await service.detail(readSessionCookie(req.get('Cookie'), 'admin'), paymentId, req.query),
+      await service.detail(
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
+        paymentId,
+        req.query,
+      ),
     )
   }
   const postAction: RequestHandler = async (req, res) => {
@@ -162,7 +174,7 @@ function createPaymentMonitorController(service: ReturnType<typeof createPayment
     respond(
       res,
       await service.reconcile(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         paymentId,
         req.body,
         req.get('Idempotency-Key'),
@@ -172,20 +184,26 @@ function createPaymentMonitorController(service: ReturnType<typeof createPayment
   }
   const getAdminProviderReceipts: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
-    const result = await service.receipts(readSessionCookie(req.get('Cookie'), 'admin'), req.query)
+    const result = await service.receipts(
+      cookies.readSessionCookie(req.get('Cookie'), 'admin'),
+      req.query,
+    )
     respond(res, result.items, 200, result.pagination)
   }
   return { getAdminPayments, getPaymentDetail, postAction, getAdminProviderReceipts }
 }
 
-function createPaymentRiskController(service: ReturnType<typeof createPaymentRiskService>) {
+function createPaymentRiskController(
+  service: ReturnType<typeof createPaymentRiskService>,
+  cookies: SessionCookies,
+) {
   const postPaymentsRiskDecisions: RequestHandler = async (req, res) => {
     parseInput(z.strictObject({}), req.query)
     const { paymentId } = parseInput(paymentRiskParams, req.params)
     respond(
       res,
       await service.decide(
-        readSessionCookie(req.get('Cookie'), 'admin'),
+        cookies.readSessionCookie(req.get('Cookie'), 'admin'),
         paymentId,
         req.body,
         req.get('Idempotency-Key'),

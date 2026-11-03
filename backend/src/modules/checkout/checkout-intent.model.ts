@@ -1,4 +1,4 @@
-import { Schema, type Connection, type Types } from 'mongoose'
+import { type Connection, Schema, type Types } from 'mongoose'
 import { mutableSchemaOptions, optionalObjectIdField } from '../../shared/database/schema.js'
 
 type CheckoutIntent = {
@@ -76,5 +76,5 @@ function checkoutIntentModel(connection: Connection) {
     : connection.model<CheckoutIntent>('CheckoutIntent', schema, 'checkoutIntents')
 }
 
-export { checkoutIntentModel }
 export type { CheckoutIntent }
+export { checkoutIntentModel }

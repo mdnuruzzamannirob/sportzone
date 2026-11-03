@@ -1,8 +1,8 @@
-import { variantStockView as stockView } from '../catalog/products/variant.schema.js'
-import { z } from 'zod'
-import { paginationSchema } from '../../shared/pagination.js'
 import { Types } from 'mongoose'
+import { z } from 'zod'
 import { ApiError } from '../../shared/errors/app-error.js'
+import { paginationSchema } from '../../shared/pagination.js'
+import { variantStockView as stockView } from '../catalog/products/variant.schema.js'
 import type { StockCounters } from '../catalog/products/variant.service.js'
 
 const id = z.string().regex(/^[a-f0-9]{24}$/)
@@ -163,17 +163,17 @@ function stockSnapshot({ physical, reserved, committed }: StockCounters) {
 
 export { variantStockView as stockView } from '../catalog/products/variant.schema.js'
 export {
+  adjustmentBody,
+  adjustmentInput,
+  adjustmentResult,
+  allocationInput,
+  inventoryFacet,
+  inventoryList,
   inventoryParams,
   inventoryQuery,
   movementQuery,
-  adjustmentBody,
-  operationKey,
-  inventoryList,
-  inventoryFacet,
   movementView,
-  adjustmentResult,
-  stockSnapshot,
   objectId,
-  allocationInput,
-  adjustmentInput,
+  operationKey,
+  stockSnapshot,
 }

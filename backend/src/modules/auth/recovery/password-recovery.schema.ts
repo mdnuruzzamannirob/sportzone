@@ -15,4 +15,4 @@ const changeInput = z.strictObject({
   newPassword: newPasswordPolicy,
 })
 
-export { issuance, confirmation, changeInput }
+export { changeInput, confirmation, issuance }

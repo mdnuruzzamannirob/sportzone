@@ -1,14 +1,14 @@
-import { ApiError } from '../../../shared/errors/app-error.js'
 import type { ClientSession } from 'mongoose'
 import { z } from 'zod'
+import { ApiError } from '../../../shared/errors/app-error.js'
 import { parseInput } from '../../../shared/middleware/validate.js'
 import { paymentChannels } from '../../settings/setting.schema.js'
 import {
+  type PaymentChannelApproval,
   paymentChannel,
   paymentChannelApproval,
   paymentMethodEligibility,
   verifiedChannelCapability,
-  type PaymentChannelApproval,
 } from './payment-eligibility.schema.js'
 
 // The live provider/merchant verification adapter belongs to P07. Absence denies every online
@@ -123,4 +123,4 @@ function paymentInitiationChannelAccess(
   }
 }
 
-export { paymentEligibility, verifiedMerchantChannels, paymentInitiationChannelAccess }
+export { paymentEligibility, paymentInitiationChannelAccess, verifiedMerchantChannels }

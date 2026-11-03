@@ -1,4 +1,4 @@
-import { Schema, type Connection, type Types } from 'mongoose'
+import { type Connection, Schema, type Types } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
 
 const paymentStates = [
@@ -74,5 +74,5 @@ function paymentModel(connection: Connection) {
     : connection.model<Payment>('Payment', schema, 'payments')
 }
 
-export { paymentModel, paymentStates, paymentAmounts }
 export type { Payment }
+export { paymentAmounts, paymentModel, paymentStates }

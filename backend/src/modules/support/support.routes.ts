@@ -1,28 +1,25 @@
-import { createSupportReadController, createSupportController } from './support.controller.js'
-import { Router, type Request } from 'express'
-import {
-  type BrowserSecurity,
-  readContextCookie,
-} from '../auth/sessions/browser-security.service.js'
-import { createSessionHttp, readSessionCookie } from '../auth/sessions/session.http.js'
-import type { SessionService } from '../auth/sessions/session.service.js'
-import type { createComplaintService } from './support.service.js'
+import { type Request, Router } from 'express'
 import { ApiError } from '../../shared/errors/app-error.js'
-import type { CustomerAccountAccess } from '../auth/auth.public.js'
-import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
-import type { createAuthThrottle } from '../auth/sessions/auth-throttle.service.js'
+import type {
+  BrowserSecurity,
+  ComplaintThrottle,
+  CustomerAccountAccess,
+  SessionHttp,
+} from '../auth/auth.public.js'
+import { createSupportController, createSupportReadController } from './support.controller.js'
+import type { createComplaintService } from './support.service.js'
 
 // Local/test composition only. Other support mutations and operational queues remain gated.
 function createSupportReadRoutes(
   complaints: Pick<ReturnType<typeof createComplaintService>, 'adminList'>,
   security: BrowserSecurity,
-  sessions: SessionService,
+  sessionHttp: SessionHttp,
 ) {
-  const controller = createSupportReadController(complaints)
+  const controller = createSupportReadController(complaints, sessionHttp)
 
   const router = Router(),
     cors = security.cors('admin'),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
   for (const path of ['/admin/complaints']) router.options(path, cors)
   router.get('/admin/complaints', cors, http.require('admin'), controller.getAdminComplaints)
 
@@ -35,26 +32,26 @@ function createSupportRoutes(
     customers: CustomerAccountAccess
   },
   security: BrowserSecurity,
-  sessions: SessionService,
-  throttle: ReturnType<typeof createAuthThrottle>,
+  sessionHttp: SessionHttp,
+  throttle: ComplaintThrottle,
   storefrontOrigin: string,
 ) {
-  const controller = createSupportController(deps)
+  const controller = createSupportController(deps, sessionHttp)
 
   const router = Router(),
     cors = security.cors('storefront'),
     adminCors = security.cors('admin'),
-    http = createSessionHttp(sessions)
+    http = sessionHttp
   const credentials = (req: Request) => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: readGuestCookie(req.get('Cookie')),
+    customerToken: sessionHttp.readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: sessionHttp.readGuestCookie(req.get('Cookie')),
     guestPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((part) => part.trim().startsWith('sz_guest_order_sid=')),
-    contextToken: readContextCookie(req.get('Cookie'), 'storefront'),
+    contextToken: sessionHttp.readContextCookie(req.get('Cookie'), 'storefront'),
     csrfToken: req.get('X-CSRF-Token'),
   })
   for (const path of ['/complaints', '/me/complaints', '/orders/:orderId/complaints'])

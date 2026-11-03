@@ -13,4 +13,4 @@ function text(max: number) {
 
 const embedded = { _id: false, strict: 'throw', versionKey: false } as const
 
-export { text, embedded }
+export { embedded, text }

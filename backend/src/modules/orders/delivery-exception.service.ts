@@ -1,29 +1,34 @@
-import type { DeliveryDispositionVerifier } from './order.public.js'
 import { createHash } from 'node:crypto'
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
 import { z } from 'zod'
+import { ApiError } from '../../shared/errors/app-error.js'
+import { parseInput } from '../../shared/middleware/validate.js'
+import {
+  resourceId as orderId,
+  idempotencyKey as paymentInitiationKey,
+} from '../../shared/validation.js'
+import type { AuditAccess } from '../audit/audit.public.js'
 import type { AdminAccountAccess } from '../auth/auth.public.js'
-import type { createRecoveryReceiptService } from '../inventory/inventory.service.js'
-import type { cancellationPaymentAccess } from '../payments/payment.service.js'
-import { createAuditWriter, auditOperationReader } from '../audit/audit.service.js'
+import type { RecoveryReceiptService } from '../inventory/inventory.public.js'
 import { createNotificationService } from '../notifications/notification.service.js'
-import { paymentInitiationKey } from '../payments/attempts/payment-initiation.schema.js'
-import { orderModels } from './order.model.js'
-import { verifyOrderPersistence } from './order.persistence.js'
-import { orderId } from './order.schema.js'
+
+import type { CancellationPaymentAccess } from '../payments/payment.public.js'
+
 import { deliveryExceptionModel } from './delivery-exception.model.js'
 import { verifyDeliveryExceptionPersistence } from './delivery-exception.persistence.js'
 import { exceptionInput, exceptionResolution, exceptionView } from './delivery-exception.schema.js'
-import { ApiError } from '../../shared/errors/app-error.js'
-import { parseInput } from '../../shared/middleware/validate.js'
+import { orderModels } from './order.model.js'
+import { verifyOrderPersistence } from './order.persistence.js'
+import type { DeliveryDispositionVerifier } from './order.public.js'
 
 const hash = (s: string) => createHash('sha256').update(s).digest('hex')
 
 function createDeliveryExceptionService(
   connection: Connection,
   admin: AdminAccountAccess,
-  payment: ReturnType<typeof cancellationPaymentAccess>,
-  restore: ReturnType<typeof createRecoveryReceiptService>,
+  payment: CancellationPaymentAccess,
+  restore: RecoveryReceiptService,
+  auditAccess: AuditAccess,
   verifyDisposition?: DeliveryDispositionVerifier,
   refunds?: (
     session: ClientSession,
@@ -39,8 +44,8 @@ function createDeliveryExceptionService(
 ) {
   const model = deliveryExceptionModel(connection),
     { orders } = orderModels(connection),
-    audit = createAuditWriter(connection),
-    lookup = auditOperationReader(connection)
+    audit = auditAccess.write,
+    lookup = auditAccess.lookup
   const view = (row: InstanceType<typeof model>) =>
     exceptionView.parse({
       id: row._id.toHexString(),

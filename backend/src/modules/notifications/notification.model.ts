@@ -1,4 +1,4 @@
-import { Schema, type Connection } from 'mongoose'
+import { type Connection, Schema } from 'mongoose'
 import { mutableSchemaOptions } from '../../shared/database/schema.js'
 
 const recipient = new Schema(
@@ -89,5 +89,5 @@ function createNotificationModel(connection: Connection) {
 
 type NotificationModel = ReturnType<typeof createNotificationModel>
 
-export { createNotificationModel }
 export type { NotificationModel }
+export { createNotificationModel }

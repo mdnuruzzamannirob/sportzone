@@ -1,7 +1,7 @@
-import { Types, type ClientSession, type Connection } from 'mongoose'
+import { type ClientSession, type Connection, Types } from 'mongoose'
+import { type MediaPolicy, validateMediaPolicy } from '../../config/media.js'
 import { ApiError } from '../../shared/errors/app-error.js'
-import { validateMediaPolicy, type MediaPolicy } from '../../config/media.js'
-import { mediaModel, type MediaAsset } from './media.model.js'
+import { type MediaAsset, mediaModel } from './media.model.js'
 import type { MediaAccess, MediaProvider, MediaScanner } from './media.types.js'
 
 type MediaDependencies = {
@@ -40,5 +40,5 @@ function createMediaContext(
 
 type MediaContext = ReturnType<typeof createMediaContext>
 
-export { key, requireTransaction, createMediaContext }
-export type { MediaDependencies, MediaContext }
+export type { MediaContext, MediaDependencies }
+export { createMediaContext, key, requireTransaction }

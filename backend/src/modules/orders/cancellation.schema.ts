@@ -1,7 +1,6 @@
-import { paginationSchema } from '../../shared/pagination.js'
 import { z } from 'zod'
-import { lifecycleText } from './order-lifecycle.schema.js'
-import { orderId } from './order.schema.js'
+import { paginationSchema } from '../../shared/pagination.js'
+import { singleLineText as lifecycleText, resourceId as orderId } from '../../shared/validation.js'
 
 const cancellationInput = z.strictObject({ reason: lifecycleText })
 
@@ -24,4 +23,4 @@ const cancellationQuery = paginationSchema.safeExtend({
   status: cancellationView.shape.status.optional(),
 })
 
-export { cancellationInput, cancellationDecision, cancellationView, cancellationQuery }
+export { cancellationDecision, cancellationInput, cancellationQuery, cancellationView }

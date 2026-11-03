@@ -1,23 +1,24 @@
-import type { RequestHandler } from 'express'
-import type { Request } from 'express'
+import type { Request, RequestHandler } from 'express'
 import { z } from 'zod'
-import { readSessionCookie } from '../auth/sessions/session.http.js'
-import { readGuestCookie } from '../auth/guest-access/guest-session.service.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 import { parseInput } from '../../shared/middleware/validate.js'
 import { respond } from '../../shared/responses.js'
-import type { createRefundHistoryService } from './refund-history.service.js'
+import type { SessionCookies } from '../auth/auth.public.js'
 import type { createRefundReservationService } from './obligations/refund-reservation.service.js'
-import { ApiError } from '../../shared/errors/app-error.js'
+import type { createRefundHistoryService } from './refund-history.service.js'
 import type { createRefundOperationsService } from './refund-operations.service.js'
 
-function createRefundHistoryController(service: ReturnType<typeof createRefundHistoryService>) {
+function createRefundHistoryController(
+  service: ReturnType<typeof createRefundHistoryService>,
+  cookies: SessionCookies,
+) {
   const id = z.string().regex(/^[a-f0-9]{24}$/)
   const credentials = (req: Request) => ({
     customerPresent: (req.get('Cookie') ?? '')
       .split(';')
       .some((p) => p.trim().startsWith('sz_customer_sid=')),
-    customerToken: readSessionCookie(req.get('Cookie'), 'customer'),
-    guestToken: readGuestCookie(req.get('Cookie')),
+    customerToken: cookies.readSessionCookie(req.get('Cookie'), 'customer'),
+    guestToken: cookies.readGuestCookie(req.get('Cookie')),
   })
   const getMeRefunds: RequestHandler = async (req, res) => {
     parseInput(z.undefined(), req.body)
@@ -42,6 +43,7 @@ function createRefundHistoryController(service: ReturnType<typeof createRefundHi
 function createRefundRequestController(
   service: Pick<ReturnType<typeof createRefundReservationService>, 'request'>,
   origin: string,
+  cookies: SessionCookies,
 ) {
   const postOrdersRefundRequests: RequestHandler = async (req, res) => {
     if (req.get('Origin') !== origin) throw new ApiError('CSRF_INVALID')
@@ -58,8 +60,8 @@ function createRefundRequestController(
           customerPresent: (cookie ?? '')
             .split(';')
             .some((value) => value.trim().startsWith('sz_customer_sid=')),
-          customerToken: readSessionCookie(cookie, 'customer'),
-          guestToken: readGuestCookie(cookie),
+          customerToken: cookies.readSessionCookie(cookie, 'customer'),
+          guestToken: cookies.readGuestCookie(cookie),
           csrfToken: req.get('X-CSRF-Token'),
         },
         orderId,
@@ -71,8 +73,11 @@ function createRefundRequestController(
   return { postOrdersRefundRequests }
 }
 
-function createRefundController(service: ReturnType<typeof createRefundOperationsService>) {
-  const token = (cookie: string | undefined) => readSessionCookie(cookie, 'admin')
+function createRefundController(
+  service: ReturnType<typeof createRefundOperationsService>,
+  cookies: SessionCookies,
+) {
+  const token = (cookie: string | undefined) => cookies.readSessionCookie(cookie, 'admin')
   const params = z.strictObject({
     refundId: z.string().regex(/^[a-f0-9]{24}$/),
   })
@@ -146,4 +151,4 @@ function createRefundController(service: ReturnType<typeof createRefundOperation
   }
 }
 
-export { createRefundHistoryController, createRefundRequestController, createRefundController }
+export { createRefundController, createRefundHistoryController, createRefundRequestController }

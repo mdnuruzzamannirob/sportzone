@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
-import { ApiError } from '../../shared/errors/app-error.js'
-import type { MediaPolicy } from '../../config/media.js'
-import type { MediaFile, MediaFormat } from './media.types.js'
 import { z } from 'zod'
+import type { MediaPolicy } from '../../config/media.js'
+import { ApiError } from '../../shared/errors/app-error.js'
+import type { MediaFile, MediaFormat } from './media.types.js'
 
 function dimensions(bytes: Buffer, format: MediaFormat) {
   if (format === 'png' && bytes.length >= 24 && bytes.toString('ascii', 12, 16) === 'IHDR')
@@ -85,4 +85,4 @@ const claimEvidenceForm = z.strictObject({
     .max(40),
 })
 
-export { inspectFile, claimEvidenceForm }
+export { claimEvidenceForm, inspectFile }

@@ -1,6 +1,6 @@
-import { ApiError } from '../../shared/errors/app-error.js'
-import { Schema, type Connection, type InferSchemaType } from 'mongoose'
+import { type Connection, type InferSchemaType, Schema } from 'mongoose'
 import { integerField, mutableSchemaOptions } from '../../shared/database/schema.js'
+import { ApiError } from '../../shared/errors/app-error.js'
 
 const oid = { type: Schema.Types.ObjectId, required: true, immutable: true }
 

@@ -1,9 +1,9 @@
 import type { RequestHandler } from 'express'
 import { ApiError } from '../../../shared/errors/app-error.js'
 import { respond } from '../../../shared/responses.js'
+import { type BrowserSecurity, readContextCookie } from './browser-security.service.js'
 import { readSessionCookie } from './session.http.js'
 import type { SessionService } from './session.service.js'
-import { readContextCookie, type BrowserSecurity } from './browser-security.service.js'
 
 // Guest persistence is owned by P06-015; this adapter must verify the exact order scope,
 // expiry and revocation. Never substitute a customer/browser credential for a guest one.

@@ -1,15 +1,10 @@
 import { z } from 'zod'
+import { idempotencyKey as paymentInitiationKey } from '../../../shared/validation.js'
 import { attemptId } from './payment-attempt.schema.js'
 
 const paymentInitiationInput = z.strictObject({
   requestedChannel: z.enum(['bkash', 'nagad', 'rocket']),
 })
-
-const paymentInitiationKey = z
-  .string()
-  .min(1)
-  .max(128)
-  .regex(/^[\x21-\x7e]+$/)
 
 const paymentInitiationResult = z.strictObject({
   attemptId: attemptId.optional(),
@@ -65,11 +60,11 @@ const publicPaymentAttempt = z.strictObject({
 })
 
 export {
-  paymentInitiationInput,
-  paymentInitiationKey,
-  paymentInitiationResult,
-  paymentInitiationParams,
   paymentAttemptParams,
   paymentAttemptStatus,
+  paymentInitiationInput,
+  paymentInitiationKey,
+  paymentInitiationParams,
+  paymentInitiationResult,
   publicPaymentAttempt,
 }

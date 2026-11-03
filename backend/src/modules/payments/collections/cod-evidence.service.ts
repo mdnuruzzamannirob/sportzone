@@ -1,10 +1,10 @@
-import { readProtectedFile } from '../../../shared/protected-file.js'
 import { createHash } from 'node:crypto'
 import { isAbsolute } from 'node:path'
 import { z } from 'zod'
-import { codCollectionInput, codCollectionProof } from './cod-collection.schema.js'
-import { ApiError } from '../../../shared/errors/app-error.js'
 import { assertOutsideTransaction } from '../../../shared/database/transaction.js'
+import { ApiError } from '../../../shared/errors/app-error.js'
+import { readProtectedFile } from '../../../shared/protected-file.js'
+import { codCollectionInput, codCollectionProof } from './cod-collection.schema.js'
 
 const date = z.iso.datetime({ offset: true })
 

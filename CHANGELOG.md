@@ -8,6 +8,16 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 3 November 2026 — Backend src architecture work in progress
+
+- Separated server lifecycle from configured application composition; injected auth HTTP and audit
+  capabilities, detached public DTO/provider/job contracts, and consolidated shared input validation.
+- Standardized bottom exports across src. Source compilation, lint and format passed for 308 files;
+  runtime imports are acyclic. Full src remains unfinished: 47 source boundary violations and stale
+  allowance inventory still require resolution. Tests/review and outside-src consumers remain deferred.
+- Updated the [existing P03-030 evidence](docs/evidence/P03-021-backend-refactor.md#remaining-src-architecture-work--ongoing-3-november-2026).
+  No commit/push/branch/PR operations or application acceptance.
+
 ## 3 November 2026 — Whole-module structural batch
 
 - Organized all twenty module owners, extracted wishlist, placed variants under products and separated
