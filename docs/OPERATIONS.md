@@ -363,6 +363,7 @@ command is supplied; local storefront build/start is not a production deployment
 #### Local development lifecycle
 
 `npm run dev` coordinates local development on Linux/macOS/WSL: one TypeScript watch compiler and both UI dev servers.
+The development watcher and source-boundary checker use the pinned `typescript-legacy` (TypeScript 6.0.3) compiler API; build/typecheck commands use TypeScript 7.
 The compiler uses the existing backend tsconfig; its first successful emit starts the API and later
 successful builds gracefully restart it. This avoids a duplicate initial compilation. API startup validates
 configuration before database/HTTP access; only the API explicitly loads optional root `.env` and injected
