@@ -2,7 +2,8 @@ import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { rmSync } from 'node:fs'
 import { resolve } from 'node:path'
-import ts from 'typescript'
+// TypeScript 7 does not expose the legacy compiler/watch API.
+import ts from 'typescript-legacy'
 
 // Discard obsolete generated paths before the initial watch compilation.
 rmSync(resolve('backend/dist'), { recursive: true, force: true })
