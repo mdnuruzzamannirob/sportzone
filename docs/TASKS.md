@@ -531,7 +531,7 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
 
 ### Phase 03 — Authentication and core backend
 
-**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 32.
+**Plan reference:** `IMPLEMENTATION_PLAN.md` §6, Phase 03. **Associated gate:** M1. **Tasks:** 35.
 
 - [x] **P03-001 — Bootstrap modular Express API and shared middleware**\
   **Status:** `Done` · **Area:** Backend/core · **Owner:** Codex\
@@ -800,6 +800,33 @@ owned historically by P03-019/P03-020/P02-012/P02-013. P01-018 and P03-021/P02-0
   **Deliverable:** Review complete backend/root test inventories, consumers and automated workflows; remove redundant coverage, fix fixture isolation/lifecycle and make affected CI execution match the active stage without weakening gates.\
   **Acceptance:** Preserve distinct financial/security/boundary coverage, verify final test discovery and applicable real checks, reconcile actual merged dependencies and record environmental limits separately from acceptance. No new test cases or application-stage acceptance.\
   **Evidence:** [Review, retained coverage and checks](./evidence/P03-021-backend-refactor.md#p03-032--complete-test-and-ci-review). Completed 4 November 2026 under Tasks §2 after executor review: 77 tooling, 813 backend unit, 185 contract, 1,236 real integration, 80 admin/98 storefront unit and 36 distinct browser cases have passing observations through full runs and affected rechecks. Final locked types/build/lint/format/security/smoke checks Passed; nineteen redundant/dependent cases removed or consolidated without new cases. Docker execution remains unavailable due local daemon permissions; hosted/image/provider/stage gates are unchanged and not marked Passed.
+
+- [x] **P03-033 — Prune duplicate backend domain tests and redundant database fixtures**\
+  **Status:** `Done` · **Area:** Backend/tests · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Owner clarification to focus on backend test-code cleanup; Architecture §§4/6; Testing §§3/5.2/15.5\
+  **Depends on:** `P03-032`\
+  **Deliverable:** Delete duplicated catalog/coupon suites, retain unique database constraints in existing API tests, move model-only validation to existing unit tests and share setup across rejected-input matrices.\
+  **Acceptance:** Retain independent slug/SKU races, inactive/draft/ancestry behavior, raw BSON/index/migration checks and coupon policy coverage; no new case/file or production behavior. Verify affected backend consumers and review actual deletions.\
+  **Evidence:** [Backend domain pruning and retained coverage](./evidence/P03-021-backend-refactor.md#p03-033--backend-domain-test-pruning). Completed 4 November 2026 under Tasks §2 after diff/coverage review: two integration files deleted, thirteen duplicate cases removed and ten repeated parameterized setups consolidated; two existing model checks moved to unit. Net 306 fewer backend test-code lines. 112 affected unit and 126 real integration cases Passed; backend types/lint/format, boundaries and repository checks Passed. No new cases, runtime behavior or CI changes.
+
+- [x] **P03-034 — Review backend test redundancy across the existing suite**\
+  **Status:** `Done` · **Area:** Backend/tests · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Owner request to review backend test cases and remove unnecessary coverage; Architecture §§4/6; Testing §§3/15.5\
+  **Depends on:** `P03-033`\
+  **Deliverable:** Review suite ownership and helper consumers, retire duplicate service scenarios covered by real HTTP workflows, consolidate repeated rejected-input fixtures and remove per-case persistence bootstrap.\
+  **Acceptance:** Retain distinct authorization, BSON/index, transaction rollback, concurrency and uncertain-provider checks; no new test cases, production or CI changes. Verify all shared-fixture consumers and final affected suites.\
+  **Evidence:** [Suite review, retained assertions and regression](./evidence/P03-021-backend-refactor.md#p03-034--backend-suite-redundancy-review). Completed 4 November 2026 under Tasks §2: 18 redundant cases removed and 27 repeated matrix setups consolidated, with all input assertions retained. Shared commerce settings are seeded once per case after suite bootstrap. All 815 unit, 184 contract and 1,167 current integration cases have passing observations through full/final affected runs; final backend types/lint/format, boundaries, repository checks and executor diff review Passed. No new cases, runtime, dependency or CI changes.
+
+- [x] **P03-035 — Reconcile backend tests with current behavior and root tooling ownership**\
+  **Status:** `Done` · **Area:** Backend/root tests · **Owner:** Codex\
+  **Stage:** `Backend`\
+  **Sources:** Owner full cleanup request covering historical refactor tests and possible root-suite overlap; Architecture §§4/6; Testing §§3/15.5\
+  **Depends on:** `P03-034`\
+  **Deliverable:** Review discovery, imports, CI inventory and retained test responsibilities; consolidate duplicated architecture/configuration checks and remove obsolete pipeline assertions and redundant CLI execution.\
+  **Acceptance:** Preserve distinct implementation, private-persistence, stock, provider, health and legacy-permission negative fixtures; keep current backend business/data/recovery coverage and frontend boundaries intact.\
+  **Evidence:** [Ownership review, removals and checks](./evidence/P03-021-backend-refactor.md#p03-035--current-backend-tests-and-root-tooling). Completed 4 November 2026 under Tasks §2: six duplicate root callbacks and three configuration callbacks merged into existing checks, one backend unit file deleted, duplicate identity bootstrap invocation and two stale CI-report assertions removed. 812 backend unit, 71 root tooling and five affected real integration cases Passed, with final affected CI recheck. Types/lint/format/boundaries/repository checks Passed; no new tests, production behavior or workflow changes.
 
 ### Phase 04 — Product catalog and inventory
 
@@ -2825,3 +2852,28 @@ is distinct from the configured/executing Node 24.20.0 runtime. All applicable l
 observations; [commands, reruns and explicit Docker/hosted limits](./evidence/P03-021-backend-refactor.md#p03-032--complete-test-and-ci-review).
 Executor/reviewer: Codex. Overall: 220 tasks, 143 Done, 74 Not Started, 1 In Progress, 2 Deferred.
 No backend-stage, provider, deployment or milestone acceptance is implied.
+
+
+**4 November 2026 — P03-033 / backend domain test-code pruning:** Done under Tasks §2.
+Removed two redundant integration suites and their helpers. Kept unique product index/BSON/race/drift
+checks in existing API fixtures, moved model-only checks to existing unit tests and merged repeated
+rejected-input setup. Thirteen duplicate cases deleted, ten parameterized executions consolidated,
+306 net backend test-code lines removed. No additional test case/file, CI or production-code change.
+[Disposition and verification](./evidence/P03-021-backend-refactor.md#p03-033--backend-domain-test-pruning).
+Executor/reviewer: Codex. Overall: 221 tasks, 144 Done, 74 Not Started, 1 In Progress, 2 Deferred.
+Existing application/provider/milestone acceptance remains unchanged.
+
+
+**4 November 2026 — P03-034 / backend suite redundancy review:** Done under Tasks §2.
+Reviewed the existing 126 backend test files and helper consumers; removed duplicate service/HTTP and
+route-parity executions, shared rejected-input fixtures and removed repeated settings/index bootstrap.
+All current backend unit/contract/integration coverage has passing observations with final affected
+rechecks. [Disposition and exact results](./evidence/P03-021-backend-refactor.md#p03-034--backend-suite-redundancy-review).
+Executor/reviewer: Codex. Overall: 222 tasks, 145 Done, 74 Not Started, 1 In Progress, 2 Deferred.
+
+
+**4 November 2026 — P03-035 / current backend tests and root tooling:** Done under Tasks §2.
+Reviewed test discovery, source ownership, current business/migration/recovery purpose and CI/root entry
+points. Removed duplicate refactor/configuration callbacks and obsolete tooling assertions while
+retaining required negative fixtures. [Exact disposition and results](./evidence/P03-021-backend-refactor.md#p03-035--current-backend-tests-and-root-tooling).
+Executor/reviewer: Codex. Overall: 223 tasks, 146 Done, 74 Not Started, 1 In Progress, 2 Deferred.

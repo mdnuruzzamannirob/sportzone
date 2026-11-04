@@ -223,10 +223,11 @@ it('preserves omitted parent and supports explicit null root reassignment', asyn
 it('rejects cycles, missing parents and stale ancestry revisions', async () => {
   const own = await account(),
     root = await create(own),
-    child = await create(own, { parentId: root.id })
+    child = await create(own, { parentId: root.id }),
+    leaf = await create(own, { parentId: child.id })
   await patch(own, root.id, { name: 'Stale' }, '"0"').expect(412)
-  await patch(own, root.id, { parentId: child.id }, '"1"').expect(409)
-  await patch(own, root.id, { parentId: root.id }, '"1"').expect(409)
+  await patch(own, root.id, { parentId: leaf.id }, `"${await revision(root.id)}"`).expect(409)
+  await patch(own, root.id, { parentId: root.id }, `"${await revision(root.id)}"`).expect(409)
   await create(own, { parentId: root.id })
   await post(own, {
     name: 'Missing',
@@ -234,14 +235,22 @@ it('rejects cycles, missing parents and stale ancestry revisions', async () => {
     parentId: new Types.ObjectId().toHexString(),
   }).expect(404)
 })
-it.each([undefined, '0', '*', 'W/"0"', '"01"', '"9007199254740992"'])(
-  'rejects missing or malformed revision %s',
-  async (match) => {
-    const own = await account(),
-      c = await create(own)
-    await patch(own, c.id, { name: 'Changed' }, match).expect(match === undefined ? 428 : 412)
-  },
-)
+it('rejects missing or malformed revisions without changing the category', async () => {
+  const own = await account(),
+    c = await create(own)
+  for (const match of [undefined, '0', '*', 'W/"0"', '"01"', '"9007199254740992"']) {
+    const response = await patch(own, c.id, { name: 'Changed' }, match)
+    expect(response.status, String(match)).toBe(match === undefined ? 428 : 412)
+  }
+  expect(await revision(c.id)).toBe('0')
+  await expect(
+    new (categoryModel(db.connection))({
+      name: 'Invalid',
+      slug: 'invalid',
+      revision: 0.5,
+    }).validate(),
+  ).rejects.toThrow()
+})
 it('serializes normalized slug uniqueness and concurrent cross-admin writes', async () => {
   const own = await account(),
     other = await account(),

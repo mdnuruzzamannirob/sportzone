@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { createConnection, Types } from 'mongoose'
+import { afterAll, describe, expect, it } from 'vitest'
+import { productModels } from '../../../src/modules/catalog/products/product.model.js'
 import {
   attributeSignature,
   attributes,
@@ -91,4 +93,69 @@ describe('product and variant contract validation', () => {
       expect(productInput.safeParse({ ...data, ...invalid }).success).toBe(false)
     }
   })
+})
+
+const modelConnection = createConnection()
+afterAll(() => modelConnection.destroy())
+const modelProduct = (slug: string) => ({
+  name: 'Football',
+  slug,
+  description: 'Plain description',
+  categoryIds: [new Types.ObjectId()],
+  status: 'active',
+})
+
+it('validates money, signature and stock invariants through owning Mongoose schemas', async () => {
+  const models = productModels(modelConnection)
+  const valid = {
+    productId: new Types.ObjectId(),
+    skuNormalized: 'VALID',
+    attributes: {},
+    attributeSignature: 'default',
+    regularPricePoisha: 100,
+  }
+  for (const fields of [
+    { regularPricePoisha: '100' },
+    { regularPricePoisha: 0.5 },
+    { regularPricePoisha: -1 },
+    { salePricePoisha: 101 },
+    { salePricePoisha: null },
+    { lowStockThreshold: null },
+    { attributeSignature: 'invalid' },
+    { attributes: { Size: 'XL' } },
+    { stock: { physical: 3, reserved: 2, committed: 2 } },
+    { stock: { physical: -1, reserved: 0, committed: 0 } },
+  ])
+    await expect(new models.variants({ ...valid, ...fields }).validate()).rejects.toThrow()
+  await expect(
+    new models.products({
+      ...modelProduct('invalid'),
+      categoryIds: [],
+      description: '<script>bad()</script>',
+    }).validate(),
+  ).rejects.toThrow()
+})
+
+it('models bounded ordered HTTPS image references without enabling unverified attachments', async () => {
+  const models = productModels(modelConnection)
+  const image = {
+    publicId: 'fixture-only',
+    url: 'https://example.invalid/image',
+    alt: 'Ball',
+    position: 0,
+  }
+  await expect(
+    new models.products({ ...modelProduct('images'), images: [image] }).validate(),
+  ).resolves.toBeUndefined()
+  for (const images of [
+    Array.from({ length: 13 }, () => image),
+    [{ ...image, position: -1 }],
+    [{ ...image, url: 'javascript:bad()' }],
+    [{ ...image, url: 'https://user:password@example.invalid/image' }],
+    [{ ...image, alt: '' }],
+  ]) {
+    await expect(
+      new models.products({ ...modelProduct('bad-images'), images }).validate(),
+    ).rejects.toThrow()
+  }
 })

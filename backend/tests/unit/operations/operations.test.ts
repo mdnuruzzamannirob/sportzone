@@ -31,6 +31,27 @@ describe('startup configuration', () => {
     expect(config.APP_ENV).toBe('test')
     expect(input.PORT).toBe('4000')
     expect(Object.isFrozen(config)).toBe(true)
+    expect(
+      loadEnvironment({ ...input, AUTH_PROOF_KEYS_JSON: 'not configured' }).identity,
+    ).toBeUndefined()
+    const identityInput = identityEnvironment()
+    const identityConfig = loadEnvironment(identityInput)
+    identityInput.AUTH_PROOF_KEYS_JSON = 'invalid'
+    identityInput.CUSTOMER_SESSION_TTL_SECONDS = 'invalid'
+    expect(identityConfig.identity?.sessions.customerTtlSeconds).toBe(3600)
+    expect(identityConfig.identity?.browser.contextTtlSeconds).toBe(300)
+    expect(identityConfig.identity?.recovery?.storefrontOrigin).toBe('https://shop.example.test')
+    expect(identityConfig.identity?.adminRecovery?.storefrontOrigin).toBe(
+      'https://admin.example.test',
+    )
+    expect(identityConfig.identity?.emailChange?.ttlSeconds).toBe(600)
+    for (const value of [
+      identityConfig.identity,
+      identityConfig.identity?.sessions,
+      identityConfig.identity?.browser,
+      identityConfig.identity?.recovery,
+    ])
+      expect(Object.isFrozen(value)).toBe(true)
     delete input.PORT
     delete input.API_BIND_HOST
     expect(loadEnvironment(input)).toMatchObject({
@@ -110,6 +131,13 @@ describe('startup configuration', () => {
     ).toBe('staging')
   })
   it('never logs supplied configuration values on invalid input', () => {
+    const invalid = { ...identityEnvironment(), API_PUBLIC_ORIGIN: 'http://untrusted.example.test' }
+    expect(() => loadEnvironment(invalid)).toThrow(ConfigurationError)
+    try {
+      loadEnvironment(invalid)
+    } catch (error) {
+      expect(String(error)).not.toContain('untrusted.example.test')
+    }
     const lines: string[] = []
     logConfigurationFailure(['SESSION_SECRET', 'PORT'], (line) => lines.push(line))
     const record = JSON.parse(lines[0] ?? '{}')

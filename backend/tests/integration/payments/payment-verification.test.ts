@@ -201,25 +201,27 @@ it('never allocates a verified receipt to a forged notification transaction refe
     receipts: [{ referenceMatch: false, allocationCandidate: false }],
   })
 })
-it.each([
-  { store_id: 'foreign-store' },
-  { val_id: 'foreign-validation' },
-  { status: 'FAILED' },
-  { currency: 'USD' },
-  { currency_type: 'USD' },
-  { risk_level: '2' },
-  { risk_level: undefined },
-  { amount: '10.001' },
-  { amount: '0.00' },
-  { bank_tran_id: '' },
-  { amount: '90071992547409.92' },
-])('fails closed for invalid independent evidence %j', async (change) => {
+it('keeps invalid independent evidence uncertain without changing payment', async () => {
   await seed()
-  respond(change)
-  expect(await service().verify(claim)).toEqual({ kind: 'uncertain' })
-  expect(await paymentModel(db.connection).findOne().lean()).toMatchObject({
-    paymentStatus: 'pending',
-  })
+  for (const change of [
+    { store_id: 'foreign-store' },
+    { val_id: 'foreign-validation' },
+    { status: 'FAILED' },
+    { currency: 'USD' },
+    { currency_type: 'USD' },
+    { risk_level: '2' },
+    { risk_level: undefined },
+    { amount: '10.001' },
+    { amount: '0.00' },
+    { bank_tran_id: '' },
+    { amount: '90071992547409.92' },
+  ]) {
+    respond(change)
+    expect(await service().verify(claim)).toEqual({ kind: 'uncertain' })
+    expect(await paymentModel(db.connection).findOne().lean()).toMatchObject({
+      paymentStatus: 'pending',
+    })
+  }
 })
 it('does not call provider for a different configured merchant and keeps transport/database failures uncertain', async () => {
   await seed()

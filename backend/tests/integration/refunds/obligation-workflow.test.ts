@@ -45,59 +45,6 @@ import { identityEnvironment } from '../../helpers/environment.js'
 
 registerCommerceFixture()
 
-it('refund reservation: durable obligation, attempt and source/order/unit holds commit once across different replay keys', async () => {
-  const f = await reservationFixture()
-  const first = await f.service.reserve(f.token, f.input, 'reserve')
-  expect(first.refunds).toHaveLength(1)
-  expect(first.refunds[0]).toMatchObject({ status: 'approved', capacityStatus: 'reserved' })
-  expect(await f.service.reserve(f.token, f.input, 'reserve')).toEqual(first)
-  expect(
-    await f.service.reserve(
-      f.token,
-      { ...f.input, reason: 'Another authorized review' },
-      'changed-key',
-    ),
-  ).toEqual(first)
-  await expect(
-    f.service.reserve(f.token, { ...f.input, reason: 'Changed payload' }, 'reserve'),
-  ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' })
-  const row = await refundModel(context.db.connection).findOne({ orderId: f.id }).orFail()
-  const attempt = await refundAttemptModel(context.db.connection)
-    .findOne({ refundId: row._id })
-    .orFail()
-  expect(attempt.status).toBe('created')
-  expect(attempt.amountPoisha).toBe(row.amountPoisha)
-  expect(attempt.toObject()).not.toHaveProperty('confirmedAt')
-  expect(row.timingSnapshot).toMatchObject({ status: 'under_review' })
-  expect(row.timingSnapshot?.targetAt).toBeUndefined()
-  const source = await paymentRecordModels(context.db.connection)
-    .collections.findById(row.sourceCollectionId)
-    .orFail()
-  const payment = await paymentModel(context.db.connection).findById(row.paymentId).orFail()
-  const balance = await orderModels(context.db.connection)
-    .balances.findOne({ orderId: f.id })
-    .orFail()
-  expect(source.get('merchandiseRefundHeldPoisha')).toBe(row.amountPoisha)
-  expect(payment.merchandiseRefundHeldPoisha).toBe(row.amountPoisha)
-  expect(balance.unitCoverage.reduce((sum, unit) => sum + unit.refundHeldPoisha, 0)).toBe(
-    row.amountPoisha,
-  )
-  expect(await refundModel(context.db.connection).countDocuments()).toBe(1)
-  expect(await refundAttemptModel(context.db.connection).countDocuments()).toBe(1)
-})
-
-it('refund reservation: different admins and keys converge on one natural business request', async () => {
-  const f = await reservationFixture(),
-    other = await customer('admin')
-  const results = await Promise.all([
-    f.service.reserve(f.token, f.input, 'first'),
-    f.service.reserve(other.credentials.customerToken, f.input, 'second'),
-  ])
-  expect(results[0]).toEqual(results[1])
-  expect(await refundModel(context.db.connection).countDocuments()).toBe(1)
-  expect(await refundAttemptModel(context.db.connection).countDocuments()).toBe(1)
-})
-
 it('refund reservation: competing quantities cannot reserve an original ordinal twice', async () => {
   const f = await reservationFixture(),
     other = await customer('admin')
@@ -341,6 +288,27 @@ it('Package C HTTP: canonical group, list/detail and natural replay reserve one 
   expect(
     (await orderModels(context.db.connection).orders.findById(f.id).orFail()).toObject(),
   ).toEqual(before.toObject())
+  const row = await refundModel(context.db.connection).findById(group.refunds[0].id).orFail()
+  const attempt = await refundAttemptModel(context.db.connection)
+    .findOne({ refundId: row._id })
+    .orFail()
+  expect(attempt.amountPoisha).toBe(row.amountPoisha)
+  expect(attempt.toObject()).not.toHaveProperty('confirmedAt')
+  const source = await paymentRecordModels(context.db.connection)
+    .collections.findById(row.sourceCollectionId)
+    .orFail()
+  expect(source.get('merchandiseRefundHeldPoisha')).toBe(row.amountPoisha)
+  expect(
+    (await paymentModel(context.db.connection).findById(row.paymentId).orFail())
+      .merchandiseRefundHeldPoisha,
+  ).toBe(row.amountPoisha)
+  const balance = await orderModels(context.db.connection)
+    .balances.findOne({ orderId: f.id })
+    .orFail()
+  expect(balance.unitCoverage.reduce((sum, unit) => sum + unit.refundHeldPoisha, 0)).toBe(
+    row.amountPoisha,
+  )
+  expect(await refundModel(context.db.connection).countDocuments()).toBe(1)
   expect(await refundAttemptModel(context.db.connection).countDocuments()).toBe(1)
 })
 
@@ -433,10 +401,12 @@ it('Package C HTTP: uncollected COD, absent fallback consent, client policy and 
 
 it('Package C HTTP: concurrent natural reservations converge and competing quantities cannot exceed unit entitlement', async () => {
   const f = await reservationFixture(),
-    root = packageCRoot({ options: codRefundPolicy(f) })
-  const results = await Promise.all(
-    ['a', 'b'].map((key) => packageCPost(root, f.admin, '/admin/refund-groups', f.input, key)),
-  )
+    root = packageCRoot({ options: codRefundPolicy(f) }),
+    other = await customer('admin')
+  const results = await Promise.all([
+    packageCPost(root, f.admin, '/admin/refund-groups', f.input, 'a'),
+    packageCPost(root, other, '/admin/refund-groups', f.input, 'b'),
+  ])
   expect(results.map((r) => r.status)).toEqual([201, 201])
   expect(results[0]?.body.data.refunds[0].id).toBe(results[1]?.body.data.refunds[0].id)
   await packageCPost(

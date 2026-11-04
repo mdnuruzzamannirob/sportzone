@@ -8,6 +8,30 @@ Material documentation and development changes are recorded below; these are not
 [Tasks](docs/TASKS.md) owns current status and the execution log. Linked evidence retains test results,
 environment limits and independent acceptance. Historical UI or source layouts may be superseded by later entries.
 
+## 4 November 2026 — Current backend tests and root tooling
+
+- Consolidated six duplicate root architecture checks and three backend configuration cases; deleted
+  the redundant configuration suite while retaining current policy, security and boundary assertions.
+- Removed repeated identity bootstrap execution and obsolete CI-report assertions. Reviewed backend,
+  root-tooling and browser discovery; no new tests, production behavior or workflow changes.
+- [Ownership review and results](docs/evidence/P03-021-backend-refactor.md#p03-035--current-backend-tests-and-root-tooling).
+
+## 4 November 2026 — Backend suite redundancy review
+
+- Removed duplicated service-level category, inventory, fulfillment, return, refund and review cases;
+  retained their unique assertions in existing real HTTP workflows. Merged duplicate API route parity.
+- Consolidated rejected-input fixtures and removed per-case settings/index bootstrap from shared
+  commerce setup. No new test cases, production code, dependency or CI changes.
+- [Review disposition and verification](docs/evidence/P03-021-backend-refactor.md#p03-034--backend-suite-redundancy-review).
+
+## 4 November 2026 — Backend domain test pruning
+
+- Deleted duplicated product-service and synthetic coupon-integration suites. Folded unique database
+  assertions into existing product API cases; moved model-only validation to the existing unit suite.
+- Merged repeated invalid-input/revision setups while retaining their assertions. No new test cases,
+  files, dependency, production-code or CI changes.
+- [Removed cases, retained proof and checks](docs/evidence/P03-021-backend-refactor.md#p03-033--backend-domain-test-pruning).
+
 ## 4 November 2026 — Complete backend/root test and CI review
 
 - Removed fifteen feature copies of generic boundary checks; consolidated the dependent runtime

@@ -155,33 +155,6 @@ it('claim history local: admin queue and detail require an active admin and reda
   await request(app).get('/api/v1/admin/claims').set('Cookie', adminCookie).expect(401)
 })
 
-it('physical return local: receipt never restores stock, inspected resellable units restore once under replay', async () => {
-  const f = await physicalReturnFixture(),
-    variants = productModels(context.db.connection).variants
-  const afterDispatch = (await variants.findById(f.selected.row._id).orFail()).stock.physical
-  await expect(f.inspect()).rejects.toThrow()
-  await f.receive()
-  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(afterDispatch)
-  await f.receive()
-  await f.inspect()
-  await f.inspect()
-  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(
-    afterDispatch + 1,
-  )
-  const claim = await returnModel(context.db.connection).findById(f.claimId).orFail()
-  expect(claim.status).toBe('inspected')
-  expect(claim.items[0]?.resellableUnitOrdinals).toHaveLength(1)
-  expect(
-    await context.db.connection
-      .collection('inventoryMovements')
-      .countDocuments({ type: 'return_receipt', orderId: new Types.ObjectId(f.id) }),
-  ).toBe(1)
-  await expect(f.inspect('another-key')).rejects.toThrow()
-  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(
-    afterDispatch + 1,
-  )
-})
-
 it('physical return local: audit failure rolls back stock, unit fence, movement and inspection', async () => {
   const f = await physicalReturnFixture(),
     variants = productModels(context.db.connection).variants
@@ -210,16 +183,6 @@ it('physical return local: audit failure rolls back stock, unit fence, movement 
   await f.inspect()
 })
 
-it('physical return local: competing inspection and shortage paths cannot duplicate stock', async () => {
-  const f = await physicalReturnFixture(),
-    variants = productModels(context.db.connection).variants
-  await f.receive()
-  const before = (await variants.findById(f.selected.row._id).orFail()).stock.physical
-  const outcomes = await Promise.allSettled([f.inspect('race-a'), f.inspect('race-b')])
-  expect(outcomes.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
-  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before + 1)
-})
-
 it('physical return local: invalid quantities and unauthorized admin do not change stock', async () => {
   const f = await physicalReturnFixture(),
     variants = productModels(context.db.connection).variants
@@ -243,17 +206,6 @@ it('physical return local: invalid quantities and unauthorized admin do not chan
   await f.receive()
   await expect(f.inspect('bad', 3)).rejects.toThrow()
   expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before)
-})
-
-it('physical return local: shortage cannot receive or inspect physical goods', async () => {
-  const f = await physicalReturnFixture('shortage')
-  await expect(f.receive()).rejects.toThrow()
-  await expect(f.inspect()).rejects.toThrow()
-  expect(
-    await context.db.connection
-      .collection('inventoryMovements')
-      .countDocuments({ type: 'return_receipt', orderId: new Types.ObjectId(f.id) }),
-  ).toBe(0)
 })
 
 it('physical return local: partial receipt and zero resellable quantity preserve unreturned units', async () => {
@@ -338,64 +290,6 @@ it('physical return local: downstream failure after movement rolls back stock an
     'received',
   )
   await f.inspect()
-})
-
-it('physical return local: completion requires fully received and accepted units and never restocks twice', async () => {
-  const f = await physicalReturnFixture(),
-    variants = productModels(context.db.connection).variants
-  await f.receive()
-  await f.inspect()
-  const before = (await variants.findById(f.selected.row._id).orFail()).stock.physical
-  await f.review.transition(
-    f.token,
-    f.claimId,
-    { to: 'completed', reason: 'Inspection complete' },
-    'complete',
-  )
-  await f.review.transition(
-    f.token,
-    f.claimId,
-    { to: 'completed', reason: 'Inspection complete' },
-    'complete',
-  )
-  expect((await returnModel(context.db.connection).findById(f.claimId).orFail()).status).toBe(
-    'completed',
-  )
-  expect((await variants.findById(f.selected.row._id).orFail()).stock.physical).toBe(before)
-  const balance = await orderModels(context.db.connection)
-    .balances.findOne({ orderId: f.id })
-    .orFail()
-  expect(balance.activeClaimQty).toBe(0)
-  expect(balance.resolvedClaimQty).toBe(2)
-})
-
-it('physical return local: partially received units cannot be marked completed', async () => {
-  const f = await physicalReturnFixture()
-  await f.physical.receive(
-    f.token,
-    f.claimId,
-    {
-      receiptReference: 'partial',
-      reason: 'Partial',
-      items: [{ orderItemId: f.itemId, quantity: 1 }],
-    },
-    'partial',
-  )
-  await f.physical.inspect(
-    f.token,
-    f.claimId,
-    {
-      reason: 'Inspect',
-      items: [{ orderItemId: f.itemId, acceptedQty: 1, resellableQty: 1, reason: 'Accepted' }],
-    },
-    'inspection',
-  )
-  await expect(
-    f.review.transition(f.token, f.claimId, { to: 'completed', reason: 'Too early' }, 'complete'),
-  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
-  expect((await returnModel(context.db.connection).findById(f.claimId).orFail()).status).toBe(
-    'inspected',
-  )
 })
 
 it('claim history local: customer ownership is enforced on list and nested detail', async () => {
@@ -546,6 +440,7 @@ it('Package B HTTP: multiple partial receipts/inspections restore each resellabl
       },
       key,
     )
+  await inspect('before-receipt').expect(409)
   await receive('parcel-1', 'receipt-1').expect(200)
   await receive('parcel-1', 'different-receipt-key').expect(200)
   await receive('changed-parcel', 'different-receipt-key').expect(409)
@@ -559,6 +454,8 @@ it('Package B HTTP: multiple partial receipts/inspections restore each resellabl
   await inspect('inspect-2').expect(200)
   await inspect('inspect-2').expect(200)
   const done = await f.admin(id, 'complete', {}).expect(200)
+  await f.admin(id, 'complete', {}).expect(200)
+  expect(done.body.data.status).toBe('completed')
   expect(done.body.data.items[0]).toMatchObject({
     receivedQty: 2,
     inspectedQty: 2,
@@ -572,6 +469,16 @@ it('Package B HTTP: multiple partial receipts/inspections restore each resellabl
   expect(
     (await orderModels(context.db.connection).balances.findOne({ orderId: f.orderId }).orFail())
       .resolvedClaimQty,
+  ).toBe(2)
+  expect(
+    (await orderModels(context.db.connection).balances.findOne({ orderId: f.orderId }).orFail())
+      .activeClaimQty,
+  ).toBe(0)
+  expect(
+    await context.db.connection.collection('inventoryMovements').countDocuments({
+      type: 'return_receipt',
+      orderId: new Types.ObjectId(f.orderId),
+    }),
   ).toBe(2)
 })
 
@@ -619,7 +526,25 @@ it('Package B HTTP: rejected inspected units release safely and shortage never r
       receiptReference: 'invalid',
     })
     .expect(409)
+  await f
+    .admin(sid, 'inspection', {
+      items: [
+        {
+          orderItemId: f.orderItemId,
+          acceptedQty: 1,
+          resellableQty: 1,
+          reason: 'Invalid shortage inspection',
+        },
+      ],
+    })
+    .expect(409)
   await f.admin(sid, 'complete', {}).expect(200)
+  expect(
+    await context.db.connection.collection('inventoryMovements').countDocuments({
+      type: 'return_receipt',
+      orderId: new Types.ObjectId(f.orderId),
+    }),
+  ).toBe(0)
 })
 
 it('Package B HTTP: customer evidence is private, scope-bound and attached transactionally', async () => {

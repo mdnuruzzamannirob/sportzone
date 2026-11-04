@@ -21,35 +21,6 @@ afterAll(async () => {
 })
 const create = (slug: string, parentId?: string) =>
   service.create({ name: slug, slug, ...(parentId ? { parentId } : {}) })
-it('enforces normalized unique slugs, strict metadata and safe integer counters', async () => {
-  await create('football')
-  await expect(create('Football')).rejects.toMatchObject({ code: 11000 })
-  await expect(service.create({ name: ' ', slug: 'bad' })).rejects.toMatchObject({
-    code: 'VALIDATION_FAILED',
-  })
-  await expect(service.create({ name: 'bad', slug: 'bad', sortOrder: -1 })).rejects.toThrow()
-  await expect(service.create({ name: 'bad', slug: 'bad', revision: 5 })).rejects.toThrow()
-  await expect(
-    new (categoryModel(fixture.connection))({
-      name: 'x',
-      slug: 'x',
-      revision: 0.5,
-    }).validate(),
-  ).rejects.toThrow()
-})
-it('rejects missing parents, self references and deep cycles', async () => {
-  await expect(create('missing', new Types.ObjectId().toHexString())).rejects.toMatchObject({
-    code: 'NOT_FOUND',
-  })
-  const root = await create('root')
-  const child = await create('child', root.id)
-  const leaf = await create('leaf', child.id)
-  const current = await categoryModel(fixture.connection).findById(root._id).orFail()
-  await expect(
-    service.patch(root.id, current.revision, { parentId: leaf.id }),
-  ).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
-  await expect(service.patch(root.id, current.revision, { parentId: root.id })).rejects.toThrow()
-})
 it('guards child/product dependencies and rolls back rejected deletion', async () => {
   const root = await create('root')
   const child = await create('child', root.id)

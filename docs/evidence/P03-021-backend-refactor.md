@@ -1410,3 +1410,214 @@ direction, stage selector/report behavior and final results. This package change
 storefront production source, API, database, payment policy or dependency version. P03-032 engineering
 review/refactor is Done under Tasks §2 with the Docker/hosted limits explicit above. No Git mutation
 beyond the owner's requested pull/merge/autostash was performed; no push or new test case was added.
+
+### P03-033 — Backend domain test pruning
+
+Owner clarified that the requested work is backend test-code cleanup, not additional CI/Docker/hosted
+verification. The starting working tree was clean. Changes are confined to backend tests plus this
+required execution record, Tasks and Changelog. No new test case/file, runtime behavior or CI change.
+
+- Deleted integration/promotions/coupon.test.ts (247 lines): its six cases construct prices using
+  MongoDB but pass in-memory coupon/hold/counter snapshots into the pure evaluateCouponEligibility
+  function; they never persist coupons/holds. Existing unit/promotions/coupon.test.ts independently
+  covers post-sale/excluded minima, unchanged input, customer quotas, live accepted terms and exact
+  expiry/capacity checks. Real catalog price lookup, stored coupon reservations and quota races remain
+  in pricing, checkout quote, coupon allocation and coupon admin integration suites.
+- Deleted integration/catalog/products.test.ts (293 lines). Seven aggregate-create cases repeated
+  existing unit/API behavior. Folded their unique details into the existing product API cases:
+  absent optional fields/default stock; normalized option prices and zero sale; inactive ancestry and
+  draft references; rollback against an inactive SKU; independent normalized slug and global SKU races.
+  Slug races now use distinct SKUs, so an SKU collision cannot accidentally stand in for slug protection;
+  SKU races use different products/categories and administrators. The inactive-parent and inactive-SKU
+  failures are also isolated rather than allowing one invalid prerequisite to mask another.
+- Moved the five distinct persistence/index/category-association cases into the existing product-admin
+  integration fixture. Raw BSON rejection, signature uniqueness, extra-index preservation, validator
+  drift and product-association/deletion race remain, with canonical persisted records.
+- Moved two existing model-only validation cases into unit/catalog/products.test.ts. They use an
+  unconnected Mongoose connection, closed by afterAll, instead of starting a replica set just to call
+  validate(). Integer/price/stock/signature and bounded image validation assertions are retained.
+- Consolidated the six product-rejection variants and six malformed-revision variants into one case
+  per operation, reusing one principal/fixture. All twelve input checks remain; category revision is
+  checked unchanged. Ten repeated case setups are removed, without dropping those input assertions.
+
+Net case disposition: thirteen redundant cases deleted, ten parameterized case executions consolidated,
+and two cases moved from integration to unit; no extra case registered. Two standalone integration
+files and their duplicate setup/helpers are removed. Remaining schema/BSON/API layers are retained
+where they prove a distinct boundary; cases were not removed merely to reduce a numerical total.
+Existing glob discovery and backend TypeScript projects include the retained cases without changes.
+
+Verification on the current locked toolchain, Node 24.20.0 and isolated MongoDB 8.0.16 replica sets:
+
+| Command | Observation |
+| --- | --- |
+| npm run test:unit --workspace backend -- tests/unit/catalog/products.test.ts tests/unit/catalog/product-admin.test.ts tests/unit/promotions/coupon.test.ts tests/unit/promotions/pricing.test.ts | Passed: 112 cases, four suites, 1.50s |
+| npm run test:integration --workspace backend -- tests/integration/catalog/product-admin.test.ts tests/integration/catalog/category-admin.test.ts tests/integration/promotions/pricing.test.ts tests/integration/promotions/coupon-allocation.test.ts tests/integration/promotions/coupon-admin.test.ts tests/integration/checkout/checkout-quote.test.ts | Passed: 126 cases, six suites, 15.63s |
+
+Raw local output: /tmp/sportzone-backend-domain-unit.log and
+/tmp/sportzone-backend-domain-integration.log. The integration script writes the latest selected report
+to test-results/database.json. Full backend/root/frontend/CI/provider suites were not rerun for this
+localized test-only change under Testing §15.5. No application-stage or external acceptance is implied.
+
+
+Final backend typecheck, lint:check and format:check Passed, as did lint:boundaries (419 production
+files, zero errors), repository documentation/link checks and git diff --check. Executor inspected
+actual deletions and retained per-boundary coverage, including the now-independent slug/SKU failure
+conditions, canonical category-reference race, raw BSON checks and all rejected matrix inputs.
+Net backend test-code reduction is 306 lines. P03-033 is Done under Tasks §2; the recorded checks cover
+this work package, not a fresh run of every unchanged backend case or application-stage acceptance.
+
+
+### P03-034 — Backend suite redundancy review
+
+Continued the owner's backend-only cleanup request from the already staged P03-033 changes, preserving
+those changes. Inventory: 126 test files (74 integration, 51 unit, one contract), plus 20 support/fixture
+files including smoke. Reviewed suite responsibilities, source imports, setup and scenario overlap;
+checked all 143 TypeScript test/support files for named helper consumers. No unused named helper
+exports were found. Structural overlap is only a candidate signal: separate audience/provider/domain
+checks remain when they exercise different authority or persistence, even with similar code.
+
+Review disposition across the backend:
+
+| Area | Retained responsibility / cleanup |
+| --- | --- |
+| Application, configuration, infrastructure and operations | Real composition/startup, protected configuration, MongoDB topology/transactions, additive rollout, encrypted operator artifacts and bounded CLI behavior remain |
+| Identity, customer, cart and wishlist | Separate audience, CSRF, revocation, proof consumption, ownership and saved-state invariants remain; cart/wishlist rejection inputs share one fixture per operation |
+| Catalog, delivery, settings and promotions | Retained public visibility, media binding, indexes/BSON, pricing, quota/race and historical policy checks; removed category service copies of existing unit/admin behavior |
+| Inventory and checkout | Real counter/stock/hold/quote/idempotency, outer rollback and capacity races remain; duplicate physical-adjustment replay/concurrency cases retire in favor of actual HTTP tests |
+| Payments and provider adapters | Independent verification, immutable receipt mapping, partial/excess collections, uncertainty, leases and retry guards remain; invalid independent evidence and method-query rows share fixtures |
+| Orders and notifications | Existing HTTP fulfillment journey and shipping race now carry the duplicated stock/history/payment assertions; provider status classification stays in unit tests, with representative durable worker behavior retained |
+| Returns, refunds, reviews, support and reporting | Distinct ordinal/capacity, rollback, entitlement, independent payout evidence, authorization and recovery checks remain; duplicated return/reservation/undelivered-review service scenarios fold into existing HTTP workflows |
+| API contracts and helpers | Planned-operation parity merged into existing actual-router parity case; shared commerce setup still bootstraps once, then seeds only the required settings document per scenario |
+
+Removed/merged case mapping:
+
+- Category service: two cases duplicated normalized identity/strict input and ancestor-cycle behavior.
+  Existing unit category validation and admin uniqueness/input cases retain those checks. Admin cycle
+  scenario now tests a three-level descendant; fractional model revision assertion joins its existing
+  revision case. Dependency deletion, deletion/creation race and corrupt public ancestry remain.
+- Inventory service: duplicate adjustment replay/conflict and duplicate-command concurrency cases.
+  Existing actual HTTP replay and concurrent-write cases retain stable movement IDs, exact physical
+  count, one movement/audit and actor/quantity/reason conflicts. Capability/overflow/outer rollback,
+  distinct concurrent increments, raw BSON and append-only checks remain independently covered.
+- Returns: five redundant receipt/replay, concurrent inspection, shortage physical processing and
+  complete/partial-complete cases. Existing HTTP partial journey checks inspection-before-receipt,
+  no restock on receipt, replay, partial completion denial, final completion replay, exact movements
+  and unit balances. HTTP race and shortage scenarios retain the conflicting transitions; audit and
+  post-movement rollback cases remain separate.
+- Refund reservation: two duplicate natural replay/concurrent-admin cases. Existing HTTP cases now
+  assert actual source/payment/unit holds, amount-matched created attempt and absent payout facts,
+  and race different administrators. Concurrent different-quantity entitlement and outer rollback
+  remain separate, as do multi-source and correction-class scenarios.
+- Review qualification: removed duplicate undelivered service case; retained its eligibility result
+  in the existing real composed HTTP denial scenario, alongside no review persistence.
+- Fulfillment: three duplicate policy/normal lifecycle/shipping-replay service cases. Existing HTTP
+  journey/policy/race scenarios retain exact stock, one dispatch, status history, unchanged unpaid
+  payment, denied terminal reversal, changed dispatch-reference replay and no effect on denied policy.
+- Notifications: removed two redundant expanded status rows (422 and 503), already independently
+  classified by unit transport tests; durable permanent rejection and 409/500 uncertainty remain.
+- API registry: removed one duplicate router assembly/parity callback after moving its planned-operation
+  assertion into the existing actual-router parity case.
+
+Net disposition for this continuation: 18 redundant executed cases removed (16 callbacks including
+one contract callback, plus two expanded notification status rows); five rejected-input matrices retain
+all 32 inputs in five cases, removing 27 repeated setups. No new case, test/support file, package,
+production source or CI change. Existing discovery globs and TypeScript inventory remain valid.
+Shared commerce beforeEach no longer recreates settings/policy indexes; explicit initialization remains
+in beforeAll and in dedicated bootstrap/readiness tests. Per-case canonical settings are inserted once.
+
+Verification on Node 24.20.0 and isolated MongoDB 8.0.16 replica sets:
+
+| Command | Observed result |
+| --- | --- |
+| npm run test:unit --workspace backend | Passed: 815 cases, 51 suites, 17.56s |
+| npm run test:contract --workspace backend | Passed: API artifact check and 184 cases, 5.52s |
+| npm run test:integration --workspace backend | Passed: 1,170 cases, all 74 suites, 319.76s; fulfillment was loaded before its last three duplicates were removed |
+| npm run test:integration --workspace backend -- tests/integration/orders/fulfillment-workflow.test.ts tests/integration/notifications/notifications.test.ts | Passed against final files: 47 cases (28 fulfillment, 19 notification), 11.03s |
+| npm run typecheck --workspace backend | Passed on final test changes |
+| npm run lint:check --workspace backend | Passed: 506 files |
+| npm run format:check --workspace backend | Passed: 511 files |
+| npm run lint:boundaries | Passed: 419 production files, zero errors |
+| npm run lint | Passed: repository documentation/reference checks |
+| git diff --check | Passed |
+
+The full plus final focused runs cover all 1,167 current integration cases. This is change-based reuse
+of unchanged suite results, not a claim that one fresh final invocation executed 1,167 cases. Raw logs:
+/tmp/backend-prune-unit.log, /tmp/backend-prune-contract.log,
+/tmp/backend-prune-full-integration.log and /tmp/backend-prune-final-workflows.log.
+The broad integration run finished last and owns the latest test-results/database.json; focused final
+results are retained in their separate log. An initial focused assertion expected 422 for inspection
+before receipt; the actual state-conflict contract is 409. Corrected that migrated assertion and the
+subsequent full suite passed; no production behavior or error mapping changed.
+
+Executor reviewed deletions against retained HTTP/service/unit assertions and actual composition,
+including distinct rollback injection points, cross-admin races, independent provider facts and
+historical financial balances. This continuation removes 167 net backend test-code lines; combined
+with the preserved staged P03-033 cleanup, 473 net lines and two integration files are removed.
+No new tests were registered and no production, frontend, CI or dependency files changed.
+P03-034 is Done under Tasks §2 after engineering verification and final diff review. Application-stage
+and external acceptance are outside this test-refactor package.
+
+
+### P03-035 — Current backend tests and root tooling
+
+Owner requested another full review against the completed backend implementation, including unwanted
+historical refactor tests and possible root-test overlap. Prior P03-033/P03-034 changes were already
+staged and are preserved. This continuation changes only existing test files and required evidence.
+
+Discovery/ownership findings:
+
+- Backend Vitest configurations select only tests/unit, tests/integration and tests/contracts within
+  backend. Production build selects only src. The check-only TypeScript project includes backend
+  tests/contracts; it does not pull in root or frontend test suites.
+- Checked all 142 current backend TypeScript test/support files: 1,563 relative static/dynamic import
+  references resolve within backend or shared; none imports root tests/tooling, tests/e2e or frontend
+  implementation. Reviewed helper consumers and discovery alongside the P03-034 suite disposition.
+- Root npm test:unit explicitly runs the two tooling files. Backend CI rootChecks intentionally also
+  executes repository tooling, metadata, boundaries and formatting; this is separate from backend
+  domain tests. Root browser tests use the separate test:ui entry point. Current hosted backend-stage
+  scope excludes application frontend/browser execution. Workflow and inventory behavior are unchanged.
+- Retained domain, provider, migration, index/BSON, financial, authorization, concurrency and recovery
+  scenarios where they validate current code/contracts. A historical task/refactor label alone is not
+  redundant behavior: persisted proof/schema compatibility and permanent architecture guards remain.
+
+Concrete cleanup and retained mappings:
+
+| Removed duplicate / obsolete code | Current owner of required assertions |
+| --- | --- |
+| Root TOOL-05 and REFUND-BOUNDARY-02 callbacks | BACKEND-BOUNDARY-01 private models/persistence/barrels and BACKEND-BOUNDARY-04 provider transport/public types; direct persistence and provider-private type fixtures retained |
+| Root IDENTITY-BOUNDARY-01 and DELIVERY-BOUNDARY-01 callbacks | Generic controller/model, foreign public-contract and root/health wiring checks; unique health case retained in REFACTOR-BOUNDARY-03 |
+| Root REFACTOR-BOUNDARY-05 callback | Implementation, persistence and stock legacy-permission attempts consolidated in REFACTOR-BOUNDARY-04; positive inventory capability checks remain in inventory-owned cases |
+| Root REFACTOR-BOUNDARY-07 callback | Configuration implementation/schema/public-type assertions join REFACTOR-BOUNDARY-01; provider-private type denial joins BACKEND-BOUNDARY-04 |
+| backend/tests/unit/application/composition.test.ts | Its three configuration cases merge into existing startup validation and safe-diagnostic cases in unit/operations/operations.test.ts; frozen typed policy, disabled proof options, unsafe enabled origins and secret-free errors retained |
+| Repeated bootstrap-identity child process in integration/application/composition.test.ts | Canonical compiled bootstrap inventory in application/backend-completion.test.ts; notification migration and disabled worker preflight remain in composition |
+| CI assertions about removed preparation/source-revision diagnostics | Existing exact command list, failure propagation and no-later-command checks already prove current pipeline behavior; obsolete field/string assertions deleted |
+
+Preserved surviving scenario IDs and frontend fixtures; no new callback, test/helper file, package,
+production source, API/database contract, workflow or CI selection change. Net this continuation:
+three backend callbacks and six root callbacks merged, one backend unit file removed, 137 fewer test
+lines overall. Current backend inventory is 125 test files: 50 unit, 74 integration, one contract.
+
+Verification on Node 24.20.0 and isolated MongoDB 8.0.16 replica sets:
+
+| Command | Observed result |
+| --- | --- |
+| npm run test:unit --workspace backend | Passed: 812 cases, 50 suites, 16.29s |
+| npm run test:unit | Passed: all 71 root tooling cases, 7.61s |
+| node --test --test-isolation=none tests/tooling/ci.test.mjs | Passed: final 34 CI cases after making literal GitHub Actions expressions unambiguous to Biome; unchanged 37 development cases reuse the full result |
+| npm run test:integration --workspace backend -- tests/integration/application/composition.test.ts tests/integration/application/backend-completion.test.ts | Passed: five real integration cases, 16.91s, including every canonical compiled bootstrap entry point |
+| npm run typecheck --workspace backend | Passed |
+| npm run lint:check --workspace backend | Passed: 505 files |
+| npm run format:check --workspace backend | Passed: 510 files |
+| biome check tests/tooling/ci.test.mjs tests/tooling/development.test.mjs via the installed node_modules binary | Passed without warnings |
+| npm run lint:boundaries | Passed: 419 production files, zero errors |
+| npm run lint and git diff HEAD --check | Passed: 848 repository files, 1,664 local links, zero errors; no whitespace errors |
+
+An initial sandboxed operations-unit invocation could not bind local HTTP listeners; the unchanged
+assertions passed outside that sandbox. Final logs: /tmp/sportzone-backend-unit-final.log,
+/tmp/sportzone-root-cleanup-final.log, /tmp/sportzone-ci-cleanup-final.log and
+/tmp/sportzone-composition-cleanup-final.log. The latest database report is the five-case focused run.
+P03-034 full integration and contract results remain valid for unchanged suites under Testing §15.5;
+no fresh full integration/contract or frontend/build/provider/stage acceptance is claimed here.
+Executor reviewed actual deletions, retained negative fixtures, current discovery and final diff.
+
+P03-035 is Done under Tasks §2 after final repository checks and executor review.

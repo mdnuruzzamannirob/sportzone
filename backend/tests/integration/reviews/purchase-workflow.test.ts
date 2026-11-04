@@ -103,6 +103,9 @@ it('blocked review audit: composed review API denies undelivered purchase, forei
       () => context.now,
     ),
   })
+  expect(
+    await inTransaction(context.db.connection, (session) => f.eligibility(session, f.selection)),
+  ).toBeNull()
   const input = {
     rating: 5,
     comment: 'Synthetic invalid proof',
@@ -152,20 +155,6 @@ it('review qualification local: only the owner of the exact delivered product it
   } finally {
     await session.endSession()
   }
-})
-
-it('review qualification local: undelivered order cannot create a verified review', async () => {
-  const f = await deliveredReviewFixture(false)
-  expect(
-    await inTransaction(context.db.connection, (session) => f.eligibility(session, f.selection)),
-  ).toBeNull()
-  await expect(
-    f.reviews.create(f.buyer.credentials.customerToken, f.selection.productId, {
-      rating: 4,
-      comment: 'Synthetic review',
-      qualifyingOrderItemId: f.selection.qualifyingOrderItemId,
-    }),
-  ).rejects.toMatchObject({ code: 'BUSINESS_RULE_VIOLATION' })
 })
 
 it('review qualification local: full return and synthetic completed refund block a new review while preserving existing review and moderation', async () => {
