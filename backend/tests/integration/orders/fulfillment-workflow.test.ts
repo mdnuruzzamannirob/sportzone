@@ -67,61 +67,6 @@ import { identityEnvironment } from '../../helpers/environment.js'
 
 registerCommerceFixture()
 
-it('lifecycle/COD local: missing qualified approval blocks confirmation without stock/payment/order changes', async () => {
-  const f = await lifecycleFixture(false),
-    before = await orderModels(context.db.connection).orders.findById(f.id).lean()
-  await expect(f.move('confirmed')).rejects.toThrow()
-  expect(await orderModels(context.db.connection).orders.findById(f.id).lean()).toEqual(before)
-  expect((await paymentModel(context.db.connection).findById(f.payment._id))?.revision).toBe(0)
-  expect(
-    (await productModels(context.db.connection).variants.findById(f.selected.row._id))?.stock,
-  ).toMatchObject({ physical: 10, committed: 2 })
-})
-
-it('lifecycle/COD local: ordinary graph, exact shipping generation and delivery retain independent Pending cash', async () => {
-  const f = await lifecycleFixture()
-  await expect(f.move('shipped')).rejects.toThrow()
-  await f.move('confirmed')
-  await f.move('processing')
-  await f.move('shipped')
-  await f.move('delivered')
-  const row = await orderModels(context.db.connection).orders.findById(f.id)
-  expect(row?.fulfillmentStatus).toBe('delivered')
-  expect(row?.statusHistory).toHaveLength(4)
-  expect(row?.deliveryCommitment.status).toBe('calculated')
-  expect(
-    (await productModels(context.db.connection).variants.findById(f.selected.row._id))?.stock,
-  ).toMatchObject({ physical: 8, committed: 0, reserved: 0 })
-  expect(
-    await inventoryMovementModel(context.db.connection).countDocuments({ type: 'dispatch' }),
-  ).toBe(1)
-  expect((await paymentModel(context.db.connection).findById(f.payment._id))?.paymentStatus).toBe(
-    'pending',
-  )
-  expect(await paymentRecordModels(context.db.connection).collections.countDocuments()).toBe(0)
-  await expect(f.move('processing', 'terminal-skip')).rejects.toThrow()
-})
-
-it('lifecycle/COD local: repeated/concurrent shipping is exactly once, historical key cannot dispatch again', async () => {
-  const f = await lifecycleFixture()
-  await f.move('confirmed')
-  await f.move('processing')
-  await Promise.all([f.move('shipped', 'dispatch-key'), f.move('shipped', 'dispatch-key')])
-  await f.move('delivered')
-  expect((await f.move('shipped', 'dispatch-key')).fulfillmentStatus).toBe('delivered')
-  expect(
-    await inventoryMovementModel(context.db.connection).countDocuments({ type: 'dispatch' }),
-  ).toBe(1)
-  await expect(
-    f.lifecycle.transition(
-      f.token,
-      f.id,
-      { to: 'shipped', reason: 'Changed', dispatchReference: 'other' },
-      'dispatch-key',
-    ),
-  ).rejects.toThrow()
-})
-
 it('lifecycle/COD local: missing dispatch reference, stale generation and ordinary cancellation are denied', async () => {
   const f = await lifecycleFixture()
   await f.move('confirmed')
@@ -495,6 +440,7 @@ it('Package A HTTP: full transition journey returns canonical admin detail; deli
   expect(initial.body.data.allocationSummary.items[0].status).toBe('committed')
   expect(initial.body.data).not.toHaveProperty('checkoutIntentId')
   expect(initial.body.data).not.toHaveProperty('customerSnapshot')
+  await packageAPost(root, f, 'shipped').expect(409)
   for (const to of ['confirmed', 'processing', 'shipped', 'delivered']) {
     const result = await packageAPost(root, f, to).expect(200)
     expect(result.body.data.fulfillmentStatus).toBe(to)
@@ -505,7 +451,27 @@ it('Package A HTTP: full transition journey returns canonical admin detail; deli
   const replay = await packageAPost(root, f, 'shipped').expect(200)
   expect(replay.body.data.fulfillmentStatus).toBe('delivered')
   expect(replay.body.data.allocationSummary.items[0].status).toBe('shipped')
+  await request(root)
+    .post(`${path}/fulfillment-transitions`)
+    .set('Origin', 'http://localhost:5173')
+    .set('Cookie', f.admin.cookie)
+    .set('X-CSRF-Token', f.admin.csrf)
+    .set('Idempotency-Key', 'shipped')
+    .send({ to: 'shipped', reason: 'Synthetic HTTP authorization', dispatchReference: 'other' })
+    .expect(409)
   await packageAPost(root, f, 'processing', 'shipped').expect(409)
+  await packageAPost(root, f, 'processing', 'terminal-skip').expect(409)
+  const row = await orderModels(context.db.connection).orders.findById(f.id).orFail()
+  expect(row.statusHistory).toHaveLength(4)
+  expect(row.deliveryCommitment.status).toBe('calculated')
+  expect(
+    (await productModels(context.db.connection).variants.findById(f.selected.row._id).orFail())
+      .stock,
+  ).toMatchObject({ physical: 8, reserved: 0, committed: 0 })
+  expect(
+    await inventoryMovementModel(context.db.connection).countDocuments({ type: 'dispatch' }),
+  ).toBe(1)
+  expect(await paymentRecordModels(context.db.connection).collections.countDocuments()).toBe(0)
 })
 
 it('Package A HTTP: admin reads deny customers, missing/stale sessions and invalid parameters', async () => {
@@ -563,7 +529,16 @@ it('Package A HTTP: missing keys, wrong origin/CSRF and client money cannot chan
 it('Package A HTTP: unavailable policy prevents confirmation and shipping race dispatches only once', async () => {
   const f = await lifecycleFixture(),
     denied = packageARoot(f, false)
+  const before = await orderModels(context.db.connection).orders.findById(f.id).lean()
   await packageAPost(denied.root, f, 'confirmed').expect(503)
+  expect(await orderModels(context.db.connection).orders.findById(f.id).lean()).toEqual(before)
+  expect(
+    (await paymentModel(context.db.connection).findById(f.payment._id).orFail()).revision,
+  ).toBe(0)
+  expect(
+    (await productModels(context.db.connection).variants.findById(f.selected.row._id).orFail())
+      .stock,
+  ).toMatchObject({ physical: 10, committed: 2 })
   const { root } = packageARoot(f)
   await packageAPost(root, f, 'confirmed').expect(200)
   await packageAPost(root, f, 'processing').expect(200)
@@ -575,7 +550,10 @@ it('Package A HTTP: unavailable policy prevents confirmation and shipping race d
   const stock = await productModels(context.db.connection)
     .variants.findById(f.selected.row._id)
     .orFail()
-  expect(stock.stock.committed).toBe(0)
+  expect(stock.stock).toMatchObject({ physical: 8, reserved: 0, committed: 0 })
+  expect(
+    await inventoryMovementModel(context.db.connection).countDocuments({ type: 'dispatch' }),
+  ).toBe(1)
 })
 
 it('Package A HTTP: protected cash verification, collection projection and replay preserve one source', async () => {

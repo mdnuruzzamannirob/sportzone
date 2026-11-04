@@ -84,7 +84,10 @@ describe('executable API contract registry', () => {
   })
   it('reconciles actual Express routers, including explicit transport methods', () => {
     const actual = [registeredRouter(), ...localOnlyRouters()].flatMap(registeredOperations)
-    assertOperationParity(actual.filter((op) => !['HEAD', 'OPTIONS'].includes(op.method)))
+    const business = actual.filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
+    assertOperationParity(business)
+    assertOperationParity(business, artifacts['planned-operations.json'].operations)
+    expect(business).toHaveLength(operations.length)
     assertOperationParity(
       actual.filter((op) => op.method === 'HEAD'),
       transportOperations,
@@ -159,13 +162,6 @@ describe('executable API contract registry', () => {
         'health/health.routes.ts',
       ].sort(),
     )
-  })
-  it('covers every specified business operation with a real active or explicitly local-only router', () => {
-    const all = [registeredRouter(), ...localOnlyRouters()]
-      .flatMap(registeredOperations)
-      .filter((op) => !['HEAD', 'OPTIONS'].includes(op.method))
-    assertOperationParity(all, artifacts['planned-operations.json'].operations)
-    expect(all).toHaveLength(operations.length)
   })
   it('validates the whole OpenAPI and Postman documents against official offline schemas', () => {
     const official = JSON.parse(

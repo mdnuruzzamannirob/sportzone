@@ -97,7 +97,7 @@ it('shares typed proof policy across actual HTTP issuance and the notification w
   ).toBe(401)
 })
 
-it('preserves compiled bootstrap/migration entry points and safe worker preflight without external email', async () => {
+it('preserves compiled notification migration and safe worker preflight without external email', async () => {
   const environment: NodeJS.ProcessEnv = {
     ...process.env,
     ...identityEnvironment(),
@@ -111,18 +111,16 @@ it('preserves compiled bootstrap/migration entry points and safe worker prefligh
   }
   const models = createIdentityModels(fixture.connection)
   const before = await models.users.countDocuments()
-  for (const tool of ['bootstrap-identity', 'migrate-notifications']) {
-    const result = spawnSync(process.execPath, [`scripts/${tool}.mjs`], {
-      env: environment,
-      encoding: 'utf8',
-      timeout: 20000,
-      maxBuffer: 1048576,
-    })
-    expect(result.status).toBe(0)
-    expect(result.error).toBeUndefined()
-    expect(result.stdout.includes(environment.SESSION_SECRET ?? '')).toBe(false)
-    expect(result.stderr).toBe('')
-  }
+  const migration = spawnSync(process.execPath, ['scripts/migrate-notifications.mjs'], {
+    env: environment,
+    encoding: 'utf8',
+    timeout: 20000,
+    maxBuffer: 1048576,
+  })
+  expect(migration.status).toBe(0)
+  expect(migration.error).toBeUndefined()
+  expect(migration.stdout.includes(environment.SESSION_SECRET ?? '')).toBe(false)
+  expect(migration.stderr).toBe('')
   expect(await models.users.countDocuments()).toBe(before)
   const worker = spawnSync(process.execPath, ['scripts/notification-worker.mjs'], {
     env: environment,

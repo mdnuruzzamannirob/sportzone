@@ -327,7 +327,6 @@ function registerCommerceFixture() {
       'auditLogs',
     ])
       await db.connection.db?.collection(name).deleteMany({})
-    await initializeSettingsPersistence(db.connection, 5)
     categoryId = (
       await categoryModel(db.connection).create({
         name: 'Synthetic',
@@ -355,15 +354,19 @@ function registerCommerceFixture() {
       approvalEvidenceRef: 'synthetic:test-only',
       createdBy: new Types.ObjectId(),
     })
-    await settingsModel(db.connection).updateOne(
-      { key: 'primary' },
-      {
-        $set: {
-          'paymentChannels.codEnabled': true,
-          'activePolicyVersions.terms': 'synthetic-terms-v1',
-        },
+    await settingsModel(db.connection).create({
+      key: 'primary',
+      revision: 0,
+      deliveryCoverageRevision: 0,
+      lowStockThreshold: 5,
+      paymentChannels: {
+        bkashEnabled: false,
+        nagadEnabled: false,
+        rocketEnabled: false,
+        codEnabled: true,
       },
-    )
+      activePolicyVersions: { terms: 'synthetic-terms-v1' },
+    })
     service = makeService()
     app = createApp({
       apiRouter: Router().use(

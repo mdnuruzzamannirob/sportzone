@@ -18,10 +18,14 @@ import { createSessionService } from '../../../src/modules/auth/sessions/session
 import { createCatalogRoutes } from '../../../src/modules/catalog/catalog.routes.js'
 import { createCatalogService } from '../../../src/modules/catalog/catalog.service.js'
 import { categoryModel } from '../../../src/modules/catalog/categories/category.model.js'
+import { createCategoryService } from '../../../src/modules/catalog/categories/category.service.js'
 import { productModels } from '../../../src/modules/catalog/products/product.model.js'
 import { initializeProductPersistence } from '../../../src/modules/catalog/products/product.persistence.js'
 import { createProductAdminRoutes } from '../../../src/modules/catalog/products/product.routes.js'
-import { createProductAdminService } from '../../../src/modules/catalog/products/product.service.js'
+import {
+  createProductAdminService,
+  createProductService,
+} from '../../../src/modules/catalog/products/product.service.js'
 import { variantStockAccess } from '../../../src/modules/catalog/products/variant.service.js'
 import { initializeInventoryPersistence } from '../../../src/modules/inventory/inventory.persistence.js'
 import { createInventoryService } from '../../../src/modules/inventory/inventory.service.js'
@@ -31,7 +35,10 @@ import { initializeMediaPersistence } from '../../../src/modules/media/media.per
 import { createMediaService } from '../../../src/modules/media/media.service.js'
 import { createNotificationService } from '../../../src/modules/notifications/notification.service.js'
 import { composeCatalogDependencies, composeIdentityRoutes } from '../../../src/setup.js'
-import { createDeclaredIndexes } from '../../../src/shared/database/indexes.js'
+import {
+  createDeclaredIndexes,
+  verifyDeclaredIndexes,
+} from '../../../src/shared/database/indexes.js'
 import { sessionHttpFor } from '../../helpers/auth.js'
 import { isolatedDatabase } from '../../helpers/database.js'
 
@@ -192,7 +199,10 @@ it('creates product and normalized default SKU atomically with safe DTO, Locatio
     sku: 'DEFAULT-SKU',
     stock: { physical: 0, reserved: 0, committed: 0, available: 0 },
     revision: 0,
+    attributes: {},
   })
+  expect(d.variants[0]).not.toHaveProperty('salePricePoisha')
+  expect(d.variants[0]).not.toHaveProperty('lowStockThreshold')
   expect(await db.connection.db?.collection('auditLogs').countDocuments()).toBe(1)
 
   const before = await productModels(db.connection).products.findById(res.body.data.id).lean()
@@ -205,13 +215,29 @@ it('returns every active/inactive variant in detail and bounded filtered lists w
   const own = await account(),
     p = await create(own, {
       variants: [
-        variant({ attributes: { size: 's' } }),
-        variant({ attributes: { size: 'm' }, status: 'inactive' }),
+        variant({ attributes: { Size: ' S ' }, salePricePoisha: 0 }),
+        variant({
+          attributes: { size: 'm' },
+          status: 'inactive',
+          regularPricePoisha: 15000,
+          salePricePoisha: 12000,
+        }),
       ],
     })
   await create(own, { status: 'inactive' })
   const before = await models.users.findById(own.user._id).lean()
-  expect((await detail(own, p.id)).variants).toHaveLength(2)
+  const variants = (await detail(own, p.id)).variants
+  expect(variants).toHaveLength(2)
+  expect(variants).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ attributes: { size: 's' }, salePricePoisha: 0 }),
+      expect.objectContaining({
+        attributes: { size: 'm' },
+        regularPricePoisha: 15000,
+        salePricePoisha: 12000,
+      }),
+    ]),
+  )
   const r = await get(own, `${base}?pageSize=1`).expect(200)
   expect(r.body.meta).toMatchObject({ totalItems: 2, totalPages: 2 })
   expect(r.body.data).toHaveLength(1)
@@ -219,33 +245,56 @@ it('returns every active/inactive variant in detail and bounded filtered lists w
   expect((await models.users.findById(own.user._id).lean())?.updatedAt).toEqual(before?.updatedAt)
   expect((await get(own, `${base}?q=%2E%2A`)).body.data).toEqual([])
 })
-it.each([
-  { variants: [] },
-  { variants: undefined },
-  { variants: [variant({ attributes: {} }), variant({ attributes: { size: 'm' } })] },
-  { variants: [variant({ attributes: { size: 'm' } }), variant({ attributes: { size: ' M ' } })] },
-  { variants: [variant({ salePricePoisha: 101 })] },
-  { stock: { physical: 1 } },
-])('rejects invalid initial variants or protected product fields', async (extra) => {
+it('rejects invalid initial variants and protected fields without writing products', async () => {
   const own = await account()
-  await post(own, base, body(extra)).expect(400)
-  expect(await productModels(db.connection).products.countDocuments()).toBe(0)
+  for (const extra of [
+    { variants: [] },
+    { variants: undefined },
+    { variants: [variant({ attributes: {} }), variant({ attributes: { size: 'm' } })] },
+    {
+      variants: [variant({ attributes: { size: 'm' } }), variant({ attributes: { size: ' M ' } })],
+    },
+    { variants: [variant({ salePricePoisha: 101 })] },
+    { stock: { physical: 1 } },
+  ]) {
+    const response = await post(own, base, body(extra))
+    expect(response.status, JSON.stringify(extra)).toBe(400)
+    expect(await productModels(db.connection).products.countDocuments()).toBe(0)
+  }
 })
 it('rejects unknown/inactive ancestry and an active product without active SKUs', async () => {
   const own = await account()
   await post(own, base, body({ categoryIds: [new Types.ObjectId().toHexString()] })).expect(404)
+  const child = await categoryModel(db.connection).create({
+    name: 'Child',
+    slug: 'child',
+    parentId: categoryId,
+    status: 'active',
+  })
   await categoryModel(db.connection).updateOne(
     { _id: categoryId },
     { $set: { status: 'inactive' } },
   )
   await post(own, base, body()).expect(409)
-  await post(own, base, body({ status: 'draft' })).expect(201)
+  await post(own, base, body({ categoryIds: [child.id] })).expect(409)
+  await post(own, base, body({ status: 'draft', categoryIds: [child.id] })).expect(201)
+  const categories = createCategoryService(db.connection),
+    products = createProductService(db.connection, categories)
+  const current = await categoryModel(db.connection).findById(child.id).orFail()
+  await expect(
+    categories.remove(child.id, current.revision, products.hasCategoryReferences),
+  ).rejects.toMatchObject({ code: 'STATE_CONFLICT' })
+  await categoryModel(db.connection).updateOne({ _id: categoryId }, { $set: { status: 'active' } })
   await post(own, base, body({ variants: [variant({ status: 'inactive' })] })).expect(409)
 })
 it('enforces normalized slug/SKU uniqueness and rolls back the whole rejected aggregate', async () => {
   const own = await account(),
     sku = 'UNIQUE-SKU',
-    first = await create(own, { slug: 'unique', variants: [variant({ sku })] })
+    first = await create(own, {
+      slug: 'unique',
+      status: 'draft',
+      variants: [variant({ sku, status: 'inactive' })],
+    })
   const before = (await categoryModel(db.connection).findById(categoryId))?.revision
   await post(own, base, body({ slug: ' UNIQUE ' })).expect(409)
   await post(
@@ -266,10 +315,35 @@ it('enforces normalized slug/SKU uniqueness and rolls back the whole rejected ag
 it('serializes concurrent duplicate creation and stale product edits across admins', async () => {
   const own = await account(),
     other = await account(),
-    input = body({ slug: 'racing', variants: [variant({ sku: 'RACING' })] })
-  const r = await Promise.all([post(own, base, input), post(other, base, input)])
+    input = body({ slug: 'racing', variants: [variant({ sku: 'FIRST' })] })
+  const r = await Promise.all([
+    post(own, base, input),
+    post(other, base, body({ slug: ' RACING ', variants: [variant({ sku: 'SECOND' })] })),
+  ])
   expect(r.map((x) => x.status).sort()).toEqual([201, 409])
+  expect(await productModels(db.connection).products.countDocuments()).toBe(1)
+  expect(await productModels(db.connection).variants.countDocuments()).toBe(1)
   const p = r.find((x) => x.status === 201)?.body.data
+  const another = await categoryModel(db.connection).create({
+    name: 'Other',
+    slug: 'other',
+    status: 'active',
+  })
+  const skus = await Promise.all([
+    post(own, base, body({ slug: 'sku-first', variants: [variant({ sku: 'SHARED' })] })),
+    post(
+      other,
+      base,
+      body({
+        slug: 'sku-second',
+        categoryIds: [another.id],
+        variants: [variant({ sku: ' shared ' })],
+      }),
+    ),
+  ])
+  expect(skus.map((result) => result.status).sort()).toEqual([201, 409])
+  expect(await productModels(db.connection).products.countDocuments()).toBe(2)
+  expect(await productModels(db.connection).variants.countDocuments()).toBe(2)
   const edits = await Promise.all([
     patch(own, `${base}/${p.id}`, { featured: true }, '"0"'),
     patch(other, `${base}/${p.id}`, { name: 'Changed' }, '"0"'),
@@ -591,4 +665,96 @@ it('serializes variant price edits with real stock movement without lost counter
   expect(after.variants[0].stock).toEqual({ physical: 2, reserved: 0, committed: 0, available: 2 })
   expect(after.variants[0].regularPricePoisha).toBe(edited.status === 200 ? 120 : 100)
   expect(after.variants[0].revision).toBe(edited.status === 200 ? 2 : 1)
+})
+
+it('registers canonical indexed collections and idempotent explicit bootstrap without dropping extra indexes', async () => {
+  const models = productModels(db.connection)
+  expect(models.products.schema.options.autoIndex).toBe(false)
+  expect(models.variants.schema.options.autoCreate).toBe(false)
+  await models.products.collection.createIndex({ name: 1 }, { name: 'fixture_extra' })
+  await initializeProductPersistence(db.connection)
+  expect((await verifyDeclaredIndexes(models.products)).extraIndexes).toContain('fixture_extra')
+  expect(
+    (await models.variants.collection.indexes())
+      .filter((index) => index.unique)
+      .map((index) => index.name),
+  ).toEqual(expect.arrayContaining(['variant_sku_unique', 'variant_product_signature_unique']))
+  expect(productModels(db.connection).variants).toBe(models.variants)
+})
+
+it('enforces default and option signature uniqueness at the database index', async () => {
+  const own = await account(),
+    catalog = productModels(db.connection)
+  for (const attributes of [{}, { size: 'xl' }]) {
+    const result = await create(own, { variants: [variant({ attributes })] })
+    const original = await catalog.variants.findOne({ productId: result.id }).lean().orFail()
+    const { _id, ...data } = original
+    await expect(
+      catalog.variants.collection.insertOne({
+        ...data,
+        _id: new Types.ObjectId(),
+        skuNormalized: 'OTHER',
+      }),
+    ).rejects.toMatchObject({ code: 11000 })
+  }
+})
+
+it('rejects raw BSON writes violating integer, price, optional-null, stock and protected-field shapes', async () => {
+  const own = await account()
+  const result = await create(own, { variants: [variant({ regularPricePoisha: 10000 })] })
+  const collection = productModels(db.connection).variants.collection
+  const savedVariant = await productModels(db.connection)
+    .variants.findOne({ productId: result.id })
+    .orFail()
+  for (const fields of [
+    { regularPricePoisha: 0.5 },
+    { regularPricePoisha: -1 },
+    { salePricePoisha: 10001 },
+    { salePricePoisha: null },
+    { lowStockThreshold: null },
+    { 'stock.physical': -1 },
+    { 'stock.reserved': 1 },
+    { available: 999 },
+  ])
+    await expect(
+      collection.updateOne({ _id: savedVariant._id }, { $set: fields }),
+    ).rejects.toMatchObject({ code: 121 })
+  await expect(
+    productModels(db.connection).products.collection.updateOne(
+      { _id: new Types.ObjectId(result.id) },
+      { $set: { categoryIds: [] } },
+    ),
+  ).rejects.toMatchObject({ code: 121 })
+})
+
+it('serializes product association and category deletion without stranding a product', async () => {
+  const categories = createCategoryService(db.connection),
+    products = createProductService(db.connection, categories)
+  const root = await categoryModel(db.connection).findById(categoryId).orFail()
+  const results = await Promise.allSettled([
+    products.create(
+      {
+        name: 'Ball',
+        slug: 'race',
+        description: 'Synthetic',
+        categoryIds: [categoryId],
+        status: 'active',
+      },
+      [{ sku: 'RACE', attributes: {}, regularPricePoisha: 10000 }],
+    ),
+    categories.remove(categoryId, root.revision, products.hasCategoryReferences),
+  ])
+  expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
+  if (await productModels(db.connection).products.exists({ slug: 'race' }))
+    expect(await categoryModel(db.connection).findById(categoryId)).not.toBeNull()
+})
+
+it('fails closed on existing validator drift instead of silently migrating', async () => {
+  const isolated = db.connection.useDb(`${db.connection.name}_drift`)
+  try {
+    await isolated.createCollection('products')
+    await expect(initializeProductPersistence(isolated)).rejects.toThrow('reviewed migration')
+  } finally {
+    await isolated.dropCollection('products')
+  }
 })

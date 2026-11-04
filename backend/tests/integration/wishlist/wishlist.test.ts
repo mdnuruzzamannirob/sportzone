@@ -277,11 +277,15 @@ it('rejects suspended/revoked identities and rechecks service authorization', as
   await sessions.logout('customer', own.token)
   await get(own).expect(401)
 })
-it.each([{ userId: 'foreign' }, { productId: 'foreign' }, { saved: true }, { quantity: 1 }])(
-  'rejects unexpected mutation fields %s',
-  async (body) => {
-    const own = await account(),
-      item = await product()
+it('rejects unexpected mutation fields without saving a product', async () => {
+  const own = await account(),
+    item = await product()
+  for (const body of [
+    { userId: 'foreign' },
+    { productId: 'foreign' },
+    { saved: true },
+    { quantity: 1 },
+  ]) {
     await request(app)
       .put(path(item.id))
       .set('Cookie', own.cookie)
@@ -289,8 +293,8 @@ it.each([{ userId: 'foreign' }, { productId: 'foreign' }, { saved: true }, { qua
       .set('X-CSRF-Token', own.issued.csrfToken)
       .send(body)
       .expect(400)
-  },
-)
+  }
+})
 it('rejects invalid IDs, extra queries and read bodies', async () => {
   const own = await account()
   await put(own, 'invalid').expect(400)

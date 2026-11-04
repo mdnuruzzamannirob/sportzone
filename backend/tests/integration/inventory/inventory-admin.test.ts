@@ -234,6 +234,10 @@ it('replays the same key exactly once and rejects changed payload or actor', asy
   expect(a.body.data).toEqual(b.body.data)
   await adjust(own, id, 3, key).expect(409)
   await adjust(other, id, 2, key).expect(409)
+  await adjust(own, id, 2, key, { reason: 'Changed count' }).expect(409)
+  expect((await productModels(db.connection).variants.findById(id).orFail()).stock.physical).toBe(
+    12,
+  )
   expect(await inventoryMovementModel(db.connection).countDocuments()).toBe(1)
   expect(await db.connection.db?.collection('auditLogs').countDocuments()).toBe(1)
 })
@@ -244,6 +248,9 @@ it('serializes concurrent duplicate requests into one movement and audit fact', 
   const res = await Promise.all([adjust(own, id, 2, key), adjust(own, id, 2, key)])
   expect(res.map((r) => r.status)).toEqual([200, 200])
   expect(res[0]?.body.data.movementId).toBe(res[1]?.body.data.movementId)
+  expect((await productModels(db.connection).variants.findById(id).orFail()).stock.physical).toBe(
+    12,
+  )
   expect(await inventoryMovementModel(db.connection).countDocuments()).toBe(1)
   expect(await db.connection.db?.collection('auditLogs').countDocuments()).toBe(1)
 })
@@ -255,11 +262,10 @@ it('rejects physical counts below reserved plus committed and unsafe overflow', 
   await adjust(own, huge, 1).expect(409)
   expect(await inventoryMovementModel(db.connection).countDocuments()).toBe(0)
 })
-it.each([0, 1.5, '1', null, Number.MAX_SAFE_INTEGER + 1])(
-  'rejects malformed adjustment delta %s',
-  async (delta) => {
-    const own = await account(),
-      id = await variant()
+it('rejects malformed adjustment deltas without changing stock', async () => {
+  const own = await account(),
+    id = await variant()
+  for (const delta of [0, 1.5, '1', null, Number.MAX_SAFE_INTEGER + 1]) {
     await request(app)
       .post(`${base}/${id}/adjustments`)
       .set('Cookie', own.cookie)
@@ -268,8 +274,8 @@ it.each([0, 1.5, '1', null, Number.MAX_SAFE_INTEGER + 1])(
       .set('Idempotency-Key', 'test')
       .send({ deltaPhysical: delta, reason: 'Synthetic' })
       .expect(400)
-  },
-)
+  }
+})
 it('rejects missing key, protected fields, invalid queries and path IDs', async () => {
   const own = await account(),
     id = await variant()

@@ -94,26 +94,6 @@ it('starts at zero and atomically records signed physical adjustments without ch
   expect(variant.regularPricePoisha).toBe(10000)
   expect(variant.revision).toBe(2)
 })
-it('serializes duplicate commands and returns one stable movement id without double counting', async () => {
-  const results = await Promise.all(
-    Array.from({ length: 8 }, () => inventory.adjustPhysical(command(1))),
-  )
-  expect(new Set(results.map((result) => result.movementId)).size).toBe(1)
-  expect((await inventory.read(variantId)).physical).toBe(1)
-  expect(await inventoryMovementModel(fixture.connection).countDocuments()).toBe(1)
-})
-it('rejects replay with a different quantity, actor or reason', async () => {
-  await inventory.adjustPhysical(command(5))
-  for (const patch of [
-    { deltaPhysical: 4 },
-    { actorId: new Types.ObjectId().toHexString() },
-    { reason: 'Different count' },
-  ])
-    await expect(inventory.adjustPhysical({ ...command(5), ...patch })).rejects.toMatchObject({
-      code: 'STATE_CONFLICT',
-    })
-  expect((await inventory.read(variantId)).physical).toBe(5)
-})
 it('keeps available nonnegative under concurrent deductions', async () => {
   await inventory.adjustPhysical(command(1))
   const outcomes = await Promise.allSettled([

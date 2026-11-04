@@ -197,15 +197,14 @@ it('retains eligible out-of-stock lines honestly', async () => {
     estimatedSubtotalPoisha: 202,
   })
 })
-it.each([0, -1, 51, 1.5, '2', null])(
-  'rejects invalid quantity %s without persistence',
-  async (quantity) => {
-    const own = await account(),
-      item = await variant()
+it('rejects invalid quantities without persisting a cart', async () => {
+  const own = await account(),
+    item = await variant()
+  for (const quantity of [0, -1, 51, 1.5, '2', null]) {
     await put(own, item.id, quantity).expect(400)
     expect(await cartModel(db.connection).countDocuments({ userId: own.user._id })).toBe(0)
-  },
-)
+  }
+})
 it('rejects unknown fields, queries and invalid variant IDs', async () => {
   const own = await account(),
     item = await variant()

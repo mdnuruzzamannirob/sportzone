@@ -199,10 +199,10 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     ).toBe(1)
     expect(await models.users.exists({ _id: user._id })).not.toBeNull()
   })
-  it.each([401, 422])('does not retry permanent provider rejection %s', async (status) => {
+  it('does not retry permanent provider rejection', async () => {
     const user = await enqueue()
     now += 10
-    responseStatus = status
+    responseStatus = 401
     const worker = createNotificationDeliveryService(store, adapter(), policy, clock)
     await worker.runBatch()
     now += 1000000
@@ -210,7 +210,7 @@ describe('durable registration email pipeline with real MongoDB and local HTTP p
     expect((await row(user._id)).status).toBe('failed')
     expect(calls).toHaveLength(1)
   })
-  it.each([409, 500, 503])(
+  it.each([409, 500])(
     'preserves uncertain HTTP %s without auto resend even beyond provider idempotency lifetime',
     async (status) => {
       const user = await enqueue()

@@ -303,15 +303,17 @@ it('returns no methods for a fully funded online order', async () => {
     .expect(200)
   expect(result.body.data.methods).toEqual([])
 })
-it.each([
-  'amountPoisha=-1',
-  'amountPoisha=1.1',
-  'amountPoisha=01',
-  'amountPoisha=1&amountPoisha=2',
-  'orderId=bad',
-  'unknown=true',
-])('validates query %s', async (query) => {
-  await request(app).get(`${endpoint}?${query}`).expect(400)
+it('rejects malformed, duplicated and unknown payment method queries', async () => {
+  for (const query of [
+    'amountPoisha=-1',
+    'amountPoisha=1.1',
+    'amountPoisha=01',
+    'amountPoisha=1&amountPoisha=2',
+    'orderId=bad',
+    'unknown=true',
+  ]) {
+    await request(app).get(`${endpoint}?${query}`).expect(400)
+  }
 })
 it('enforces storefront origins, safe GET preflight, HEAD and no request bodies', async () => {
   await request(app).get(endpoint).set('Origin', 'https://attacker.test').expect(403)
